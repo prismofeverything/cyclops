@@ -24,7 +24,7 @@ var cyclops = function() {
       var M = [];
       for (var j = 0; j < size; j++) {
         var row = [];
-        for (var k = 0; k < degree; k++) {
+        for (var k = 0; k < degree + 1; k++) {
           var x = xStep * j;
           row[k] = Math.pow(x, k);
         }

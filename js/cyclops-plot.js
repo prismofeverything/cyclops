@@ -2,7 +2,7 @@ cyclops.plotFit = function(processing) {
   // display the fit process somehow
 
   var data = [0.5, 0.55, 0.7, 0.71, 0.44, 0.42, 0.14, 0.24, 0.46, 0.66];
-  var fit = cyclops.generateFit(data, 6);
+  var fit = cyclops.generateFit(data, 5);
 
   function fitData(fit, dx) {
     // transform a fitted function into an array of data
