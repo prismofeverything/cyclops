@@ -1,6 +1,6 @@
 # cyclops
 
-Take an array of arbitrary data and generate a function that emulates it (in javascript).
+Take an array of arbitrary data and generate a function that emulates it! (in javascript).
 
 ## Usage
 
