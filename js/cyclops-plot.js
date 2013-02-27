@@ -30,11 +30,6 @@ cyclops.plotFit = function(processing) {
 
   var data = normalizeData(curve3);
   var x = numeric.linspace(0, 1, data.length);
-  // var x = new Array(data.length);
-  // var step = 1.0 / (data.length - 1);
-  // for (var i = 0; i < data.length; i++) {
-  //   x[i] = i * step;
-  // }
 
   // var data = [0.5, 0.55, 0.7, 0.71, 0.44, 0.42, 0.14, 0.24, 0.46, 0.66];
   var degree = 20;
