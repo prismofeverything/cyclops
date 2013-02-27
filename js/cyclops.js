@@ -13,7 +13,7 @@ var cyclops = function() {
     return inv;
   };
 
-  var buildMatrix = function(data, degree) {
+  var seedPoly = function(data, degree) {
     // given an array of data, build a matrix from that data where
     // each row is a data point and each column is an ascending integral power
     // of that data point.
@@ -53,13 +53,14 @@ var cyclops = function() {
     // construct a new inverse transpose matrix from the inverted singular values
     var dim = numeric.dim(M);
     var Stranspose = numeric.rep([dim[1], dim[0]], 0);
+
     for (var z = 0; z < S.length; z++) {
       Stranspose[z][z] = Sinverse[z];
     }
 
     // perform the transformations in reverse and transposed!
     var VS = numeric.dot(V, Stranspose);
-    var Minverse = numeric.dot(VS, numeric.transpose(U));
+    var Minverse = numeric.dotMMsmall(VS, numeric.transpose(U));
 
     // return the newly constructued pseudoinverse
     return Minverse;
@@ -71,7 +72,7 @@ var cyclops = function() {
 
     var size = data.length;
     if (size > 0) {
-      var M = buildMatrix(data, degree);
+      var M = seedPoly(data, degree);
       var Minverse = pseudoInverse(M);
       var result = numeric.dot(Minverse, data);
       return result;
@@ -80,7 +81,7 @@ var cyclops = function() {
     }
   };
 
-  var generateFit = function(data, degree) {
+  var generatePoly = function(data, degree) {
     // given an array of data and the maximal degree to seek a fit for,
     // construct a function that emulates the given data over the range [0..1]
 
@@ -94,11 +95,26 @@ var cyclops = function() {
     }
   };
 
+  var generateCubic = function(xs, ys) {
+    // build a cubic spline between the given data points.
+
+    if (!ys) {
+      ys = xs;
+      xs = numeric.linspace(0, 1, ys.length);
+    }
+
+    var spline = numeric.spline(xs, ys);
+    return function(x) {
+      return spline.at(x);
+    }
+  };
+
   return {
     inverse: inverse,
-    buildMatrix: buildMatrix,
+    seedPoly: seedPoly,
     pseudoInverse: pseudoInverse,
     polyfit: polyfit,
-    generateFit: generateFit
+    generatePoly: generatePoly,
+    generateCubic: generateCubic
   };
 } ();
