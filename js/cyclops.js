@@ -95,18 +95,70 @@ var cyclops = function() {
     }
   };
 
-  var generateCubic = function(xs, ys) {
-    // build a cubic spline between the given data points.
-
+  var generateSpline = function(xs, ys) {
     if (!ys) {
       ys = xs;
       xs = numeric.linspace(0, 1, ys.length);
     }
 
     var spline = numeric.spline(xs, ys);
+    return spline;
+  };
+
+  var generateCubic = function(xs, ys) {
+    var spline = generateSpline(xs, ys);
     return function(x) {
       return spline.at(x);
     }
+  };
+
+  var outputSpline = function(xs, ys) {
+    var spline = generateSpline(xs, ys);
+    console.log(spline);
+    var x = spline.x;
+    var y = spline.yl;
+    var k = spline.kr;
+
+    var fn = "\
+      var x = [" + x + "];\
+      var yl = [" + y + "];\
+      var yr = [" + y + "];\
+      var kl = [" + k + "];\
+      var kr = [" + k + "];\
+      var add = function(x, y) {return x+y};\
+      var sub = function(x, y) {return x-y};\
+      var mul = function(x, y) {return x*y};\
+\
+      function _at(x1,p) {\
+        var x1,a,b,t;\
+        a = sub(mul(kl[p],x[p+1]-x[p]),sub(yr[p+1],yl[p]));\
+        b = add(mul(kr[p+1],x[p]-x[p+1]),sub(yr[p+1],yl[p]));\
+        t = (x1-x[p])/(x[p+1]-x[p]);\
+        var s = t*(1-t);\
+        return add(add(add(mul(1-t,yl[p]),mul(t,yr[p+1])),mul(a,s*(1-t))),mul(b,s*t));\
+      }\
+\
+      function at(x0) {\
+        if(typeof x0 === 'number') {\
+          var n = x.length;\
+          var p,q,mid,floor = Math.floor,a,b,t;\
+          p = 0;\
+          q = n-1;\
+          while(q-p>1) {\
+            mid = floor((p+q)/2);\
+            if(x[mid] <= x0) p = mid;\
+            else q = mid;\
+          }\
+          return _at(x0,p);\
+        }\
+        var n = x0.length, i, ret = Array(n);\
+        for(i=n-1;i!==-1;--i) ret[i] = at(x0[i]);\
+        return ret;\
+      }\
+\
+      return at(phase);"
+
+    return fn;
   };
 
   return {
@@ -115,6 +167,7 @@ var cyclops = function() {
     pseudoInverse: pseudoInverse,
     polyfit: polyfit,
     generatePoly: generatePoly,
-    generateCubic: generateCubic
+    generateCubic: generateCubic,
+    outputSpline: outputSpline
   };
 } ();

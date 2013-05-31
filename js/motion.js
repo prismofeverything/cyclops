@@ -26,7 +26,9 @@ function cyclopsMotion(processing) {
     radius = 40;
     start = new Date();
     frames = extractFrameValues(framevalues);
-    fit = cyclops.generateCubic(normalizeData(frames[0]), normalizeData(frames[1]));
+    fitCode = cyclops.outputSpline(normalizeData(frames[0]), normalizeData(frames[1]));
+    console.log(fitCode);
+    fit = new Function("phase", fitCode);
   }
 
   processing.draw = function() {
