@@ -5,10 +5,32 @@ function extractFrameValues(framevalues) {
   for (var i = 0; i < framevalues.values.length; i++) {
     var framevalue = framevalues.values[i];
     xs.push(framevalue.time);
-    ys.push(framevalue.value[0]);
+    ys.push(framevalue.value[1]);
   }
 
   return [xs, ys];
+}
+
+
+function normalizeData(input){
+  var min = 1000000000;
+  var max = 0;
+  var output = [];
+
+  for(var i = 0; i < input.length; i++){
+    if(min > input[i]){
+      min = input[i];
+    }
+    if(max < input[i]){
+      max = input[i];
+    }
+  }
+
+  for(var i = 0; i < input.length; i++){
+    output.push( (input[i] - min) / (max - min) );
+  }
+
+  return output;
 }
 
 
@@ -52,7 +74,7 @@ cyclops.plotData = function(processing) {
 
   processing.setup = function() {
 
-    frames = extractFrameValues(framevalues);
+    frames = extractFrameValues(frameData[0]);
     fitCode = cyclops.outputSpline(normalizeData(frames[0]), normalizeData(frames[1]));
     fit = new Function("phase", fitCode);
 
