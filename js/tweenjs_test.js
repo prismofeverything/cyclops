@@ -58,22 +58,22 @@ window.onload = function() {
 
   tweenTarget.onmouseover = function(){
     tween = new TWEEN.Tween( { w: currentVal } )
-          .to( { w: 1 }, 1000 )
+          .to( { w: 1 }, 1500 )
           .easing( fit )
           .onUpdate( function () {
             currentVal = this.w;
-              tweenTarget.style.width = (40 + this.w * 250) + "px";
+            tweenTarget.style.width = (40 + this.w * 250) + "px";
           } )
           .start();
   };
 
   tweenTarget.onmouseout = function(){
     tween = new TWEEN.Tween( { w: currentVal } )
-          .to( { w: 0 }, 1000 )
+          .to( { w: 0 }, 1500 )
           .easing( fit )
           .onUpdate( function () {
-             currentVal = this.w;
-              tweenTarget.style.width = (40 + this.w * 250) + "px";
+            currentVal = this.w;
+            tweenTarget.style.width = (40 + this.w * 250) + "px";
           } )
           .start();
   };
