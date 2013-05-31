@@ -25,8 +25,10 @@ function cyclopsMotion(processing) {
     period = 1000;
     radius = 40;
     start = new Date();
-    frames = extractFrameValues(frameData[0]);
-    fit = cyclops.generateCubic(normalizeData(frames[0]), normalizeData(frames[1]));
+    frames = extractFrameValues(framevalues);
+    fitCode = cyclops.outputSpline(normalizeData(frames[0]), normalizeData(frames[1]));
+    console.log(fitCode);
+    fit = new Function("phase", fitCode);
   }
 
   processing.draw = function() {
