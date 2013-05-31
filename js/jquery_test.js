@@ -40,7 +40,16 @@ function cyclopsMotion(processing) {
   }
 }
 
+
 window.onload = function() {
-  var canvas = document.getElementById("canvas");
-  var processingInstance = new Processing(canvas, cyclopsMotion);
+
+  frames = extractFrameValues(frameData[0]);
+  $.easing.cyclops = cyclops.generateCubic(normalizeData(frames[0]), normalizeData(frames[1]));
+
+  $("#tweenTarget").on("mouseover", function() {
+    $(this).stop().animate({width:300}, 1000, "cyclops");
+  });
+  $("#tweenTarget").on("mouseout", function() {
+    $(this).stop().animate({width:40}, 1000, "cyclops");
+  });
 };

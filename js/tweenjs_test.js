@@ -40,7 +40,43 @@ function cyclopsMotion(processing) {
   }
 }
 
+function update(){
+  TWEEN.update();
+  requestAnimationFrame(update);
+}
+
+var tween;
+var tweenTarget;
+var currentVal = 0;
+
 window.onload = function() {
-  var canvas = document.getElementById("canvas");
-  var processingInstance = new Processing(canvas, cyclopsMotion);
+
+  frames = extractFrameValues(frameData[0]);
+  fit = cyclops.generateCubic(normalizeData(frames[0]), normalizeData(frames[1]));
+
+  tweenTarget = document.getElementById("test");
+
+  tweenTarget.onmouseover = function(){
+    tween = new TWEEN.Tween( { w: currentVal } )
+          .to( { w: 1 }, 1000 )
+          .easing( fit )
+          .onUpdate( function () {
+            currentVal = this.w;
+              tweenTarget.style.width = (40 + this.w * 250) + "px";
+          } )
+          .start();
+  };
+
+  tweenTarget.onmouseout = function(){
+    tween = new TWEEN.Tween( { w: currentVal } )
+          .to( { w: 0 }, 1000 )
+          .easing( fit )
+          .onUpdate( function () {
+             currentVal = this.w;
+              tweenTarget.style.width = (40 + this.w * 250) + "px";
+          } )
+          .start();
+  };
+
+  update();
 };
