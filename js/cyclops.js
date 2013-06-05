@@ -114,7 +114,6 @@ var cyclops = function() {
 
   var outputSpline = function(xs, ys) {
     var spline = generateSpline(xs, ys);
-    console.log(spline);
     var x = spline.x;
     var y = spline.yl;
     var k = spline.kr;
@@ -168,6 +167,7 @@ var cyclops = function() {
     polyfit: polyfit,
     generatePoly: generatePoly,
     generateCubic: generateCubic,
+    generateSpline: generateSpline,
     outputSpline: outputSpline
   };
 } ();
