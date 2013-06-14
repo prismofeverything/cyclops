@@ -120,6 +120,24 @@ function curve(x, y, left, right) {
   return at;
 }
 
+function buildBinary(at, epsilon) {
+  return function(x) {
+    var guess = x;
+    var near = at(guess);
+    var approx = near[0];
+    var diff = x - approx;
+
+    while (Math.abs(diff) > epsilon) {
+      guess = guess + diff * 0.5;
+      near = at(guess);
+      approx = near[0];
+      diff = x - approx;
+    }
+
+    return near[1];
+  }
+}
+
 function normalizeData(input){
   var min = 1000000000;
   var max = 0;
@@ -301,6 +319,10 @@ cyclops.plotData = function(processing) {
     keyframeSpline = buildKeyframeSpline(data);
     keyframeFit = curve(keys[0], keys[1], keys[2], keys[3]);
     keyframeSnapshot = fitData(keyframeFit, 0.005);
+
+    binaryFit = buildBinary(keyframeFit, 0.0001);
+    binarySnapshot = fitData(binaryFit, 0.003);
+
     processing.size(1300, 700);
 
     controlSnapshot = fitData(function(x) {return [x,x]}, 0.005);
@@ -356,9 +378,14 @@ cyclops.plotData = function(processing) {
     drawArbitraryData(keys[0], keys[3], [xMin, xMax], [yMin, yMax]);
 
     // matching line
-    processing.strokeWeight(3);
+    processing.strokeWeight(8);
     processing.stroke(250, 250, 250);
     drawNData(keyframeSnapshot, [xMin, xMax], [yMin, yMax]);
+
+    // binary search
+    processing.strokeWeight(2);
+    processing.stroke(10, 170, 130);
+    drawData(binarySnapshot, yMin, yMax);
   };
 }
 
