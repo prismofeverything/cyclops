@@ -308,6 +308,7 @@ cyclops.plotData = function(processing) {
 
   processing.setup = function() {
     data = tims_curve;
+    data = bounce;
     // data = bezierData;
     frames = extractFrameValues(data);
     spline = cyclops.generateSpline(normalizeData(frames[0]), normalizeData(frames[1]));
