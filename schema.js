@@ -4,7 +4,8 @@
 var myTweenData = {
 
 	"position" : {
-		"originalDuration" : 1.2,
+		"duration" : 1.2,
+		"startTime" : 0,
 		"keys" : [
 			{
 				"time" : 0.1,
@@ -24,7 +25,8 @@ var myTweenData = {
 	},
 
 	"opacity" : {
-		"originalDuration" : 1.2,
+		"duration" : 1.2,
+		"startTime" : 0.25,
 		"keys" : [
 			{
 				"time" : 0.1,
