@@ -1,173 +1,167 @@
 var cyclops = function() {
-  // given a stream of data, generate a polynomial fit to that stream
-  // that can be called in its place
+  function interpolate(x0, p, x, y, left, right) {
+    var dx, dy, a, b, s, t;
+    
+    dx = x[p+1] - x[p];
+    dy = y[p+1] - y[p];
 
-  var inverse = function(v) {
-    // take the inverse of each component of a vector
+    t = (x0-x[p]) / dx;
+    it = (1 - t);
 
-    var inv = [];
-    var len = v.length;
-    for (var o = 0; o < len; o++) {
-      inv[o] = (v[o] === 0) ? 0 : 1.0 / v[o];
-    }
-    return inv;
-  };
+    xleftp = x[p] + (left[p] * dx);
+    xrightp = x[p+1] - (right[p+1] * dx);
+    
+    var xo = it*it*it*x[p] + 3*it*it*t*xleftp + 3*it*t*t*xrightp + t*t*t*x[p+1];
+    var yo = it*it*it*y[p] + 3*it*it*t*y[p] + 3*it*t*t*y[p+1] + t*t*t*y[p+1];
 
-  var seedPoly = function(data, degree) {
-    // given an array of data, build a matrix from that data where
-    // each row is a data point and each column is an ascending integral power
-    // of that data point.
-
-    var size = data.length;
-    if (size > 1) {
-      var xStep = 1.0 / (size - 1);
-      var M = [];
-      for (var j = 0; j < size; j++) {
-        var row = [];
-        for (var k = 0; k < degree + 1; k++) {
-          var x = xStep * j;
-          row[k] = Math.pow(x, k);
-        }
-        M[j] = row;
-      }
-
-      return M;
-    } else {
-      return data;
-    }
+    return [xo, yo];
   }
 
-  var pseudoInverse = function(M) {
-    // given a matrix, perform a singular value decomposition and use
-    // the result to do a pseudoinverse on that matrix
-
-    // perform the singular value decomposition
-    var singular = numeric.svd(M);
-    var U = singular.U;
-    var V = singular.V;
-    var S = singular.S;
-
-    // find the inverse of the singular values
-    var Sinverse = inverse(S);
-
-    // construct a new inverse transpose matrix from the inverted singular values
-    var dim = numeric.dim(M);
-    var Stranspose = numeric.rep([dim[1], dim[0]], 0);
-
-    for (var z = 0; z < S.length; z++) {
-      Stranspose[z][z] = Sinverse[z];
-    }
-
-    // perform the transformations in reverse and transposed!
-    var VS = numeric.dot(V, Stranspose);
-    var Minverse = numeric.dotMMsmall(VS, numeric.transpose(U));
-
-    // return the newly constructued pseudoinverse
-    return Minverse;
-  }
-
-  var polyfit = function(data, degree) {
-    // given an array of data and the maximum polynomial degree to seek a fit for,
-    // find the coefficients for the fitted polynomial
-
-    var size = data.length;
-    if (size > 0) {
-      var M = seedPoly(data, degree);
-      var Minverse = pseudoInverse(M);
-      var result = numeric.dot(Minverse, data);
-      return result;
-    } else {
-      return [];
-    }
-  };
-
-  var generatePoly = function(data, degree) {
-    // given an array of data and the maximal degree to seek a fit for,
-    // construct a function that emulates the given data over the range [0..1]
-
-    var poly = polyfit(data, degree);
+  function buildCurve(x, y, left, right) {
     return function(t) {
-      var sum = 0;
-      for (var w = 0; w < poly.length; w++) {
-        sum += poly[w] * Math.pow(t, w);
+      if(typeof t === "number") {
+        var n = x.length;
+        var p, q, mid, a, b;
+        p = 0;
+        q = n-1;
+        while(q-p>1) {
+          mid = Math.floor((p+q)/2);
+          if(x[mid] <= t) p = mid;
+          else q = mid;
+        }
+        return interpolate(t, p, x, y, left, right);
       }
-      return sum;
+
+      var n = t.length, i, ret = Array(n);
+      for(i = n-1; i !== -1; --i) {
+        ret[i] = at(t[i]);
+      }
+      return ret;
     }
-  };
+  }
 
-  var generateSpline = function(xs, ys) {
-    if (!ys) {
-      ys = xs;
-      xs = numeric.linspace(0, 1, ys.length);
+  function findIndex(at, x, epsilon) {
+    if (x < 0) return 0;
+    if (x > 1) return 1;
+    epsilon = epsilon ? epsilon : 0.001;
+
+    var guess = x;
+    var near = at(guess);
+    var index = near[0];
+    var diff = x - index;
+
+    while (Math.abs(diff) > epsilon) {
+      guess = guess + diff * 0.5;
+      near = at(guess);
+      index = near[0];
+      diff = x - index;
     }
 
-    var spline = numeric.spline(xs, ys);
-    return spline;
-  };
+    return guess;
+  }
+  
+  function normalizeData(input){
+    var min = 1000000000;
+    var max = 0;
+    var output = [];
 
-  var generateCubic = function(xs, ys) {
-    var spline = generateSpline(xs, ys);
+    for(var i = 0; i < input.length; i++){
+      if(min > input[i]){
+        min = input[i];
+      }
+      if(max < input[i]){
+        max = input[i];
+      }
+    }
+
+    for(var i = 0; i < input.length; i++){
+      output.push( (input[i] - min) / (max - min) );
+    }
+
+    return output;
+  }
+
+  function extractValues(data) {
+    var xs = [];
+    var ys = [];
+    var left = [];
+    var right = [];
+    var i,j;
+
+    ylength = data[0].value.length;
+    for (j = 0; j < ylength; j++) {
+      ys.push([]);
+    }      
+
+    for (i = 0; i < data.length; i++) {
+      var keyframe = data[i];
+      xs.push(keyframe.time);
+      right.push(keyframe.in.influence * 0.01);
+      left.push(keyframe.out.influence * 0.01);
+
+      for (j = 0; j < ylength; j++) {
+        ys[j].push(keyframe.value[j]);
+      }      
+    }
+
+    for (j = 0; j < ylength; j++) {
+      ys[j] = normalizeData(ys[j]);
+    }
+
+    return {
+      x: normalizeData(xs), 
+      y: ys, 
+      left: left, 
+      right: right
+    };
+  }
+
+  function dimensionalInterpolation(values, epsilon) {
+    var curves = [];
+    for (var j = 0; j < values.y.length; j++) {
+      var fit = buildCurve(values.x, values.y[j], values.left, values.right);
+      curves.push(fit);
+    }
+
     return function(x) {
-      return spline.at(x);
+      var vector = [];
+      var index = findIndex(curves[0], x, epsilon);
+      for (j = 0; j < values.y.length; j++) {
+        var value = curves[j](index)[1];
+        vector.push(value);
+      }
+
+      return vector;
     }
-  };
+  }
 
-  var outputSpline = function(xs, ys) {
-    var spline = generateSpline(xs, ys);
-    var x = spline.x;
-    var y = spline.yl;
-    var k = spline.kr;
+  function extractProperty(data) {
+    var values = extractValues(data);
+    var generate = dimensionalInterpolation(values);
 
-    var fn = "\
-      var x = [" + x + "];\
-      var yl = [" + y + "];\
-      var yr = [" + y + "];\
-      var kl = [" + k + "];\
-      var kr = [" + k + "];\
-      var add = function(x, y) {return x+y};\
-      var sub = function(x, y) {return x-y};\
-      var mul = function(x, y) {return x*y};\
-\
-      function _at(x1,p) {\
-        var x1,a,b,t;\
-        a = sub(mul(kl[p],x[p+1]-x[p]),sub(yr[p+1],yl[p]));\
-        b = add(mul(kr[p+1],x[p]-x[p+1]),sub(yr[p+1],yl[p]));\
-        t = (x1-x[p])/(x[p+1]-x[p]);\
-        var s = t*(1-t);\
-        return add(add(add(mul(1-t,yl[p]),mul(t,yr[p+1])),mul(a,s*(1-t))),mul(b,s*t));\
-      }\
-\
-      function at(x0) {\
-        if(typeof x0 === 'number') {\
-          var n = x.length;\
-          var p,q,mid,floor = Math.floor,a,b,t;\
-          p = 0;\
-          q = n-1;\
-          while(q-p>1) {\
-            mid = floor((p+q)/2);\
-            if(x[mid] <= x0) p = mid;\
-            else q = mid;\
-          }\
-          return _at(x0,p);\
-        }\
-        var n = x0.length, i, ret = Array(n);\
-        for(i=n-1;i!==-1;--i) ret[i] = at(x0[i]);\
-        return ret;\
-      }\
-\
-      return at(phase);"
+    return generate;
+  }
 
-    return fn;
-  };
+  function loadTween(data) {
+    var tween = {};
+    for (var key in data) {
+      if (data.hasOwnProperty(key)) {
+        var generate = extractProperty(data[key].keys);
+        tween[key] = {func: generate};
+      }
+    }
+
+    return tween;
+  }
 
   return {
-    inverse: inverse,
-    seedPoly: seedPoly,
-    pseudoInverse: pseudoInverse,
-    polyfit: polyfit,
-    generatePoly: generatePoly,
-    generateCubic: generateCubic,
-    generateSpline: generateSpline,
-    outputSpline: outputSpline
-  };
+    interpolate: interpolate,
+    buildCurve: buildCurve,
+    findIndex: findIndex,
+    normalizeData: normalizeData,
+    extractValues: extractValues,
+    dimensionalInterpolation: dimensionalInterpolation,
+    extractProperty: extractProperty,
+    loadTween: loadTween
+  }
 } ();

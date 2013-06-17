@@ -204,7 +204,7 @@ var width, height;
 var radius;
 var snapshot, keyframeSnapshot, controlSnapshot;
 
-cyclops.plotData = function(processing) {
+cyclopsMath.plotData = function(processing) {
   
   function fitData(fit, dx) {
     // transform a fitted function into an array of data
@@ -311,8 +311,8 @@ cyclops.plotData = function(processing) {
     data = bounce;
     // data = bezierData;
     frames = extractFrameValues(data);
-    spline = cyclops.generateSpline(normalizeData(frames[0]), normalizeData(frames[1]));
-    fitCode = cyclops.outputSpline(normalizeData(frames[0]), normalizeData(frames[1]));
+    spline = cyclopsMath.generateSpline(normalizeData(frames[0]), normalizeData(frames[1]));
+    fitCode = cyclopsMath.outputSpline(normalizeData(frames[0]), normalizeData(frames[1]));
     fit = new Function("phase", fitCode);
     snapshot = fitData(fit, 0.005);
 
@@ -392,5 +392,5 @@ cyclops.plotData = function(processing) {
 
 window.onload = function() {
   var canvas = document.getElementById("canvas");
-  var processingInstance = new Processing(canvas, cyclops.plotData);
+  var processingInstance = new Processing(canvas, cyclopsMath.plotData);
 };
