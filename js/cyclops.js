@@ -88,10 +88,10 @@ var cyclops = function() {
     var right = [];
     var i,j;
 
-    ylength = data[0].value.length;
+    ylength = data[0].value.length || 1;
     for (j = 0; j < ylength; j++) {
       ys.push([]);
-    }      
+    }
 
     for (i = 0; i < data.length; i++) {
       var keyframe = data[i];
@@ -99,9 +99,13 @@ var cyclops = function() {
       right.push(keyframe.in.influence * 0.01);
       left.push(keyframe.out.influence * 0.01);
 
-      for (j = 0; j < ylength; j++) {
-        ys[j].push(keyframe.value[j]);
-      }      
+      if (keyframe.value.length) {
+        for (j = 0; j < ylength; j++) {
+          ys[j].push(keyframe.value[j]);
+        }
+      } else {
+        ys[0].push(keyframe.value);
+      }
     }
 
     for (j = 0; j < ylength; j++) {
