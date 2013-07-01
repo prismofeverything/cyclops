@@ -31,7 +31,7 @@ var cyclops = function() {
         }
         return interpolate(t, p, x, y, left, right);
       }
-
+ 
       var n = t.length, i, ret = Array(n);
       for(i = n-1; i !== -1; --i) {
         ret[i] = at(t[i]);
@@ -60,11 +60,9 @@ var cyclops = function() {
     return guess;
   }
   
-  function normalizeData(input){
+  function findBounds(input) {
     var min = 1000000000;
     var max = 0;
-    var output = [];
-
     for(var i = 0; i < input.length; i++){
       if(min > input[i]){
         min = input[i];
@@ -74,11 +72,24 @@ var cyclops = function() {
       }
     }
 
+    return [min, max];
+  }
+
+  function boundData(input, bounds) {
+    var output = [];
+    var min = bounds[0];
+    var max = bounds[1];
+
     for(var i = 0; i < input.length; i++){
       output.push( (input[i] - min) / (max - min) );
     }
 
     return output;
+  }
+
+  function normalizeData(input) {
+    var bounds = findBounds(input);
+    return boundData(input, bounds);
   }
 
   function extractValues(data) {
