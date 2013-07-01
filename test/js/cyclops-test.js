@@ -1,11 +1,10 @@
 cyclops.plotFit = function(processing) {
-  var tween = cyclops.loadTween(frameData);
+  var curve = cyclops.loadCurve(frameData);
   var position, scale, rotation, opacity;
-  console.log(tween);
+  console.log(curve);
   
   function fitData(fit, dx) {
     // transform a fitted function into an array of data
-
     var data = [];
     for (x = 0.0; x <= 1.0; x += dx) {
       var y = fit(x);
@@ -16,10 +15,10 @@ cyclops.plotFit = function(processing) {
 
   processing.setup = function() {
     processing.size(1600, 800);
-    position = fitData(tween.position.func, 0.01);
-    scale = fitData(tween.scale.func, 0.01);
-    rotation = fitData(tween.rotation.func, 0.01);
-    opacity = fitData(tween.opacity.func, 0.01);
+    position = fitData(curve.position.func, 0.01);
+    scale = fitData(curve.scale.func, 0.01);
+    rotation = fitData(curve.rotation.func, 0.01);
+    opacity = fitData(curve.opacity.func, 0.01);
   }
 
   processing.draw = function() {

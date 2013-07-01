@@ -181,16 +181,16 @@ var cyclops = function() {
     return generate;
   }
 
-  function loadTween(data) {
-    var tween = {};
+  function loadCurve(data) {
+    var curve = {};
     for (var key in data) {
       if (data.hasOwnProperty(key)) {
         var generate = extractProperty(data[key].keys);
-        tween[key] = {func: generate};
+        curve[key] = {func: generate};
       }
     }
 
-    return tween;
+    return curve;
   }
 
   return {
@@ -201,6 +201,6 @@ var cyclops = function() {
     extractValues: extractValues,
     dimensionalInterpolation: dimensionalInterpolation,
     extractProperty: extractProperty,
-    loadTween: loadTween
+    loadCurve: loadCurve
   }
 } ();

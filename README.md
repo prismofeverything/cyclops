@@ -4,48 +4,41 @@ Take an array of arbitrary data and generate a function that emulates it! (in ja
 
 ## Usage
 
-```js
-var data = [0.5, 0.55, 0.7, 0.71, 0.44, 0.42, 0.14, 0.24, 0.46, 0.66];
-var poly = cyclops.generatePoly(data, 5); // polynomial of degree 5 (ax^5 + bx^4 + cx^3 + dx^2 + ex + f)
-var cubic = cyclops.generateCubic(data); // cubic spline interpolation between points
-var index = numeric.linspace(0, 1, data.length);
+The trickiest part of using Cyclops is acquiring your data.  It should be of the form:
 
-// OUTPUT
-console.log("Polyfit")
-for (x = 0; x < index.length; x++) {
-  console.log("  "+poly(index[x]));   // --> pretty close!
-}
-console.log("\n")
-console.log("Cubic splines")
-for (x = 0; x < index.length; x ++) {
-  console.log("  "+cubic(index[x]));  // --> even better!
+```js
+var data = {
+  position: {   // for example, could be any property
+    duration: 1.5,
+    startTime: 0.3,
+    keys: [{
+      time: 0,
+      value: [12, 9, -4],
+      hasTangents: true,  
+      in: {  // in describes the nature of the curve as it enters the keyframe
+        type: "bezier",
+        influence: "10",
+        tangent: [3, -4]  // does not have to have tangents, only recognized if "hasTangents" is true
+      },
+      out: {  // out describes the curve as it is leaving the keyframe
+        type: "bezier",
+        influence: "80",
+        tangent: [-3, 8] 
+      }
+    },
+    {  // you can have any number of keyframes
+      time: 0.3, ... 
+    }, ... ]
+  },
+  rotation: { ... }  // you can have any number of properties in parallel, all with the same format
 }
 ```
 
-output:
+Once you have some data defined, you can generate a function which emulates your data as a continuous function:
+
 
 ```js
-Polyfit
-  0.49753846153845366
-  0.5613146853146758
-  0.688261072261069
-  0.6824335664335701
-  0.5284475524475605
-  0.32024708624709897
-  0.1898741258741481
-  0.23623776223779203
-  0.4538834498835058
-  0.6617622377623107
-
-Cubic splines
-  0.5
-  0.55
-  0.7
-  0.71
-  0.44
-  0.42
-  0.14
-  0.24
-  0.46
-  0.66
+var curve = cyclops.loadCurve(data);
+curve.position.func(0.5);  // interpolates into your data normalized between 0 and 1
+                           // There will be an interpolation function for each property in the original data
 ```
