@@ -1,23 +1,44 @@
 var cyclops = function() {
-  function interpolate(x0, p, x, y, left, right) {
+  function interpolate(x0, p, x, y, left, right, tangentLeft, tangentRight) {
     var dx, dy, a, b, s, t;
     
     dx = x[p+1] - x[p];
     dy = y[p+1] - y[p];
+    tanL = tangentLeft[p];
+    tanR = tangentRight[p+1];
 
     t = (x0-x[p]) / dx;
     it = (1 - t);
 
     xleftp = x[p] + (left[p] * dx);
     xrightp = x[p+1] - (right[p+1] * dx);
+
+    // xleftp = (tanL && !isNaN(tanL)) ? x[p] + (left[p] * dx * tanL) : x[p] + (left[p] * dx);
+    // xrightp = (tanR && !isNaN(tanR)) ? x[p+1] - (right[p+1] * dx * tanR) : x[p+1] - (right[p+1] * dx);
+
+    yleftp = y[p];
+    yrightp = y[p+1];
+
+    // console.log("x[p]: " + x[p]);
+    // console.log("x[p+1]: " + x[p+1]);
+    // console.log("y[p]: " + y[p]);
+    // console.log("y[p+1]: " + y[p+1]);
+    // console.log("tanL: " + tanL);
+    // console.log("tanR: " + tanR);
+    
+    // yleftp = (tanL && !isNaN(tanL)) ? y[p] + (left[p] * tanL) : y[p];
+    // yrightp = (tanR && !isNaN(tanR)) ? y[p+1] + (right[p+1] * tanR) : y[p+1];
+    
+    yleftp = (tanL && !isNaN(tanL)) ? y[p] + tanL : y[p];
+    yrightp = (tanR && !isNaN(tanR)) ? y[p+1] + tanR : y[p+1];
     
     var xo = it*it*it*x[p] + 3*it*it*t*xleftp + 3*it*t*t*xrightp + t*t*t*x[p+1];
-    var yo = it*it*it*y[p] + 3*it*it*t*y[p] + 3*it*t*t*y[p+1] + t*t*t*y[p+1];
+    var yo = it*it*it*y[p] + 3*it*it*t*yleftp + 3*it*t*t*yrightp + t*t*t*y[p+1];
 
     return [xo, yo];
   }
 
-  function buildCurve(x, y, left, right) {
+  function buildCurve(x, y, left, right, tangentLeft, tangentRight) {
     return function(t) {
       if(typeof t === "number") {
         var n = x.length;
@@ -29,14 +50,8 @@ var cyclops = function() {
           if(x[mid] <= t) p = mid;
           else q = mid;
         }
-        return interpolate(t, p, x, y, left, right);
+        return interpolate(t, p, x, y, left, right, tangentLeft, tangentRight);
       }
- 
-      var n = t.length, i, ret = Array(n);
-      for(i = n-1; i !== -1; --i) {
-        ret[i] = at(t[i]);
-      }
-      return ret;
     }
   }
 
@@ -87,6 +102,17 @@ var cyclops = function() {
     return output;
   }
 
+  function scaleData(input, bounds) {
+    var output = [];
+    var scale = 1.0 / (bounds[1] - bounds[0]);
+
+    for(var i = 0; i < input.length; i++){
+      output.push(input[i] * scale);
+    }
+
+    return output;
+  }
+
   function normalizeData(input) {
     var bounds = findBounds(input);
     return boundData(input, bounds);
@@ -97,44 +123,58 @@ var cyclops = function() {
     var ys = [];
     var left = [];
     var right = [];
-    var i,j;
+    var tangentLeft = [];
+    var tangentRight = [];
+    var bounds = [];
+    var i, j;
 
     ylength = data[0].value.length || 1;
     for (j = 0; j < ylength; j++) {
       ys.push([]);
+      tangentLeft.push([]);
+      tangentRight.push([]);
     }
 
     for (i = 0; i < data.length; i++) {
       var keyframe = data[i];
       xs.push(keyframe.time);
-      right.push(keyframe.in.influence * 0.01);
       left.push(keyframe.out.influence * 0.01);
+      right.push(keyframe.in.influence * 0.01);
 
       if (keyframe.value.length) {
         for (j = 0; j < ylength; j++) {
           ys[j].push(keyframe.value[j]);
+          tangentLeft[j].push(keyframe.out.tangent[j]);
+          tangentRight[j].push(keyframe.in.tangent[j]);
         }
       } else {
         ys[0].push(keyframe.value);
+        tangentLeft[0].push(keyframe.out.tangent);
+        tangentRight[0].push(keyframe.in.tangent);
       }
     }
 
     for (j = 0; j < ylength; j++) {
-      ys[j] = normalizeData(ys[j]);
+      bounds[j] = findBounds(ys[j]);
+      ys[j] = boundData(ys[j], bounds[j]);
+      tangentLeft[j] = scaleData(tangentLeft[j], bounds[j]);
+      tangentRight[j] = scaleData(tangentRight[j], bounds[j]);
     }
 
     return {
       x: normalizeData(xs), 
       y: ys, 
       left: left, 
-      right: right
+      right: right,
+      tangentLeft: tangentLeft,
+      tangentRight: tangentRight
     };
   }
 
   function dimensionalInterpolation(values, epsilon) {
     var curves = [];
     for (var j = 0; j < values.y.length; j++) {
-      var fit = buildCurve(values.x, values.y[j], values.left, values.right);
+      var fit = buildCurve(values.x, values.y[j], values.left, values.right, values.tangentLeft[j], values.tangentRight[j]);
       curves.push(fit);
     }
 

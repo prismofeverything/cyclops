@@ -173,7 +173,7 @@ cyclopsMath.plotData = function(processing) {
 
     controlSnapshot = fitData(function(x) {return [x,x]}, 0.005);
 
-    console.log(frames);
+    // console.log(frames);
   }
 
   processing.draw = function() {
