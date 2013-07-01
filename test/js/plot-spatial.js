@@ -157,23 +157,9 @@ var plotData = function(processing) {
     frames = extract2dFrameValues(data);
     keys = cyclops.extractProperty(spatialData.keyframes);
     snapshot = fitData(keys, 0.005);
-
-    // spline = cyclopsMath.generateSpline(normalizeData(frames[0]), normalizeData(frames[1]));
-    // snapshot = fitData(spline, 0.005);
-
-    // keys = extractKeyframes(data);
-    // keyframeSpline = buildKeyframeSpline(data);
-    // keyframeFit = curve(keys[0], keys[1], keys[2], keys[3]);
-    // keyframeSnapshot = fitData(keyframeFit, 0.005);
-
-    // binaryFit = buildBinary(keyframeFit, 0.0001);
-    // binarySnapshot = fitData(binaryFit, 0.003);
-
-    processing.size(1300, 700);
-
     controlSnapshot = fitData(function(x) {return [x,x]}, 0.005);
 
-    // console.log(frames);
+    processing.size(1300, 700);
   }
 
   processing.draw = function() {
@@ -190,16 +176,6 @@ var plotData = function(processing) {
     processing.stroke(200, 150, 50);
     drawNData(controlSnapshot, [xMin, xMax], [yMin, yMax]);
     
-    // processing.strokeWeight(1);
-    // processing.stroke(80, 80, 200);
-    // processing.line(0, yMin, processing.width, yMin);
-    // processing.line(0, yMax+yMin, processing.width, yMax+yMin);
-
-    // line to match
-    // processing.strokeWeight(10);
-    // processing.stroke(150, 50, 200);
-    // drawNData(snapshot, yMin, yMax);
-    
     // points from frames
     processing.strokeWeight(9);
     processing.stroke(150, 150, 150);
@@ -210,27 +186,6 @@ var plotData = function(processing) {
     processing.stroke(100, 200, 100);
     processing.fill(100, 200, 100);
     drawNData(snapshot, [xMin, xMax], [yMin, yMax]);
-
-    // // keyframe left influence
-    // processing.strokeWeight(1);
-    // processing.stroke(200, 100, 100);
-    // processing.fill(200, 100, 100);
-    // drawArbitraryData(keys[0], keys[2], [xMin, xMax], [yMin, yMax]);
-
-    // // keyframe right influence
-    // processing.stroke(100, 100, 200);
-    // processing.fill(100, 100, 200);
-    // drawArbitraryData(keys[0], keys[3], [xMin, xMax], [yMin, yMax]);
-
-    // // matching line
-    // processing.strokeWeight(8);
-    // processing.stroke(250, 250, 250);
-    // drawNData(keyframeSnapshot, [xMin, xMax], [yMin, yMax]);
-
-    // // binary search
-    // processing.strokeWeight(2);
-    // processing.stroke(10, 170, 130);
-    // drawData(binarySnapshot, yMin, yMax);
   };
 }
 

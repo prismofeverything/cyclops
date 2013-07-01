@@ -13,22 +13,6 @@ var cyclops = function() {
     xleftp = x[p] + (left[p] * dx);
     xrightp = x[p+1] - (right[p+1] * dx);
 
-    // xleftp = (tanL && !isNaN(tanL)) ? x[p] + (left[p] * dx * tanL) : x[p] + (left[p] * dx);
-    // xrightp = (tanR && !isNaN(tanR)) ? x[p+1] - (right[p+1] * dx * tanR) : x[p+1] - (right[p+1] * dx);
-
-    yleftp = y[p];
-    yrightp = y[p+1];
-
-    // console.log("x[p]: " + x[p]);
-    // console.log("x[p+1]: " + x[p+1]);
-    // console.log("y[p]: " + y[p]);
-    // console.log("y[p+1]: " + y[p+1]);
-    // console.log("tanL: " + tanL);
-    // console.log("tanR: " + tanR);
-    
-    // yleftp = (tanL && !isNaN(tanL)) ? y[p] + (left[p] * tanL) : y[p];
-    // yrightp = (tanR && !isNaN(tanR)) ? y[p+1] + (right[p+1] * tanR) : y[p+1];
-    
     yleftp = (tanL && !isNaN(tanL)) ? y[p] + tanL : y[p];
     yrightp = (tanR && !isNaN(tanR)) ? y[p+1] + tanR : y[p+1];
     
@@ -144,8 +128,8 @@ var cyclops = function() {
       if (keyframe.value.length) {
         for (j = 0; j < ylength; j++) {
           ys[j].push(keyframe.value[j]);
-          tangentLeft[j].push(keyframe.out.tangent[j]);
-          tangentRight[j].push(keyframe.in.tangent[j]);
+          tangentLeft[j].push(keyframe.hasTangents ? keyframe.out.tangent[j] : null);
+          tangentRight[j].push(keyframe.hasTangents ? keyframe.in.tangent[j] : null);
         }
       } else {
         ys[0].push(keyframe.value);
