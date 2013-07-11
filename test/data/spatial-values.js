@@ -68,5 +68,5 @@ var spatial_values = [{"property":"Position","values":[{"time":0,"value":[0,540,
 
 var spatialData = {
   frameData: spatial_values,
-  keyframes: spatial_keyframes.position.keys
+  keyframes: spatial_keyframes.position
 }
