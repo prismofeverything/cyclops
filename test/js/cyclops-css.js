@@ -28,11 +28,14 @@ function update(){
 
 function updateCyclopsPreview(t) {
   var position    = curve.position.func(t);
-  var scale       = curve.scale.func(t)[0] * 0.5 + 0.5;
-  var rotation    = curve.rotation.func(t)[0] * 360;
+  var scale       = curve.scale.func(t)[0] * (rawFrameData["scale"].max[0] - rawFrameData["scale"].min[0]) + rawFrameData["scale"].min[0];
+  var rotation    = curve.rotation.func(t)[0] * (rawFrameData["rotation"].max[0] - rawFrameData["rotation"].min[0]) + rawFrameData["rotation"].min[0];
 
-  var x = rawFrameData["position"].min[0] + position[0] * (rawFrameData["position"].max[0] - rawFrameData["position"].min[0]);
-  var y = rawFrameData["position"].min[1] + position[1] * (rawFrameData["position"].max[1] - rawFrameData["position"].min[1]);
+  var x = rawFrameData["position"].min[0] + (position[0] * (rawFrameData["position"].max[0] - rawFrameData["position"].min[0]));
+  var y = rawFrameData["position"].min[1] + (position[1] * (rawFrameData["position"].max[1] - rawFrameData["position"].min[1]));
+  
+  scale = scale / 100;
+
 
   document.getElementById("cyclopsSquare").style.webkitTransform = "translate(" + x + "px, " + y + "px) rotate(" + rotation + "deg) scale(" + scale + ", " + scale + ")";
 }
@@ -83,6 +86,8 @@ function drawGraph(func, propertyName, valueIndex) {
   ctx.fillStyle = "#f0f0f0";
   ctx.fillRect(0,yOffset, canvas.width, yScale);
 
+
+
   ctx.beginPath();
   ctx.moveTo(0,func(0)[valueIndex] * yScale + yOffset);
   for(var i = 0; i < rawFrameData[propertyName].data.length; i++){
@@ -95,6 +100,7 @@ function drawGraph(func, propertyName, valueIndex) {
   ctx.stroke();
 
 
+
   ctx.beginPath();
   ctx.moveTo(0, func(0)[valueIndex] * yScale + yOffset);
   for(var i = 0; i < rawFrameData[propertyName].data.length; i++){
@@ -105,4 +111,6 @@ function drawGraph(func, propertyName, valueIndex) {
   }
   ctx.strokeStyle = 'red';
   ctx.stroke();
+
+
 }
