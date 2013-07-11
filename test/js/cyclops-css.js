@@ -1,8 +1,8 @@
 var previousTime    = 0;
 var tweenTime       = 0;
 
-var tweenDuration   = keyframeData.FunFun.position.duration;
-var curve           = cyclops.loadCurve(keyframeData.FunFun);
+var tweenDuration   = keyframeData.FunFun.properties.position.duration;
+var curve           = cyclops.loadCurve(keyframeData.FunFun.properties);
 
 function update(){
 
@@ -25,7 +25,6 @@ function update(){
   document.getElementById("time").innerHTML = t;
 }
 
-
 function updateCyclopsPreview(t) {
   var position    = curve.position.func(t);
   var scale       = curve.scale.func(t)[0] * (rawFrameData["scale"].max[0] - rawFrameData["scale"].min[0]) + rawFrameData["scale"].min[0];
@@ -40,7 +39,6 @@ function updateCyclopsPreview(t) {
   document.getElementById("cyclopsSquare").style.webkitTransform = "translate(" + x + "px, " + y + "px) rotate(" + rotation + "deg) scale(" + scale + ", " + scale + ")";
 }
 
-
 function updateSourcePreview(t) {
   var seconds = t * tweenDuration;
   var idx = Math.floor(rawFrameData["position"].data.length * t);
@@ -54,7 +52,6 @@ function updateSourcePreview(t) {
   document.getElementById("sourceSquare").style.webkitTransform = "translate(" + x + "px, " + y + "px) rotate(" + rotation + "deg) scale(" + scale + ", " + scale + ")";
 }
 
-
 window.onload = function() {
   update();
 
@@ -67,11 +64,9 @@ window.onload = function() {
   }
 };
 
-
 function padDigits(number, digits) {
     return Array(Math.max(digits - String(number).length + 1, 0)).join(0) + number;
 }
-
 
 function drawGraph(func, propertyName, valueIndex) {
   var canvas = document.getElementById("graph");
@@ -111,6 +106,5 @@ function drawGraph(func, propertyName, valueIndex) {
   }
   ctx.strokeStyle = 'red';
   ctx.stroke();
-
 
 }

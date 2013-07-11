@@ -1,17 +1,19 @@
 var cyclops = function() {
-  function interpolate(x0, p, x, y, left, right, tangentLeft, tangentRight) {
-    var dx, dy, a, b, s, t;
+  function interpolateCubic(x0, p, x, y, left, right) {
+    var dx, dy, t;
     
     dx = x[p+1] - x[p];
     dy = y[p+1] - y[p];
-    tanL = tangentLeft[p];
-    tanR = tangentRight[p+1];
+    tanL = left.tangent[p];
+    tanR = right.tangent[p+1];
+    speedL = left.speed[p];
+    speedR = right.speed[p+1];
 
     t = (x0-x[p]) / dx;
-    it = (1 - t);
+    it = 1-t;
 
-    xleftp = x[p] + (left[p] * dx);
-    xrightp = x[p+1] - (right[p+1] * dx);
+    xleftp = x[p] + (left.influence[p] * dx);
+    xrightp = x[p+1] - (right.influence[p+1] * dx);
 
     yleftp = (tanL && !isNaN(tanL)) ? y[p] + tanL : y[p];
     yrightp = (tanR && !isNaN(tanR)) ? y[p+1] + tanR : y[p+1];
@@ -22,7 +24,21 @@ var cyclops = function() {
     return [xo, yo];
   }
 
-  function buildCurve(x, y, left, right, tangentLeft, tangentRight) {
+  function interpolateLinear(x0, p, x, y) {
+    var dx, dy, t;
+    
+    dx = x[p+1] - x[p];
+    dy = y[p+1] - y[p];
+    t = (x0-x[p]) / dx;
+    it = 1-t;
+    
+    var xo = it*x[p] + t*x[p+1];
+    var yo = it*y[p] + t*y[p+1];
+
+    return [xo, yo];
+  }
+
+  function buildCurve(x, y, left, right) {
     return function(t) {
       if(typeof t === "number") {
         var n = x.length;
@@ -34,7 +50,11 @@ var cyclops = function() {
           if(x[mid] <= t) p = mid;
           else q = mid;
         }
-        return interpolate(t, p, x, y, left, right, tangentLeft, tangentRight);
+        if (left.type[p] == "linear") {
+          return interpolateLinear(t, p, x, y);
+        } else {
+          return interpolateCubic(t, p, x, y, left, right);
+        }
       }
     }
   }
@@ -103,62 +123,93 @@ var cyclops = function() {
   }
 
   function extractValues(data) {
+    var keys = data.keys;
     var xs = [];
     var ys = [];
-    var left = [];
-    var right = [];
-    var tangentLeft = [];
-    var tangentRight = [];
+
+    var left = {
+      type: [],
+      influence: [],
+      speed: [],
+      tangent: []
+    };
+
+    var right = {
+      type: [],
+      influence: [],
+      speed: [],
+      tangent: []
+    };
+
     var bounds = [];
     var i, j;
 
-    ylength = data[0].value.length || 1;
+    ylength = keys[0].value.length || 1;
     for (j = 0; j < ylength; j++) {
       ys.push([]);
-      tangentLeft.push([]);
-      tangentRight.push([]);
+      left.tangent.push([]);
+      right.tangent.push([]);
     }
 
-    for (i = 0; i < data.length; i++) {
-      var keyframe = data[i];
+    for (i = 0; i < keys.length; i++) {
+      var keyframe = keys[i];
       xs.push(keyframe.time);
-      left.push(keyframe.out.influence * 0.01);
-      right.push(keyframe.in.influence * 0.01);
+      left.influence.push(keyframe.out.influence * 0.01);
+      right.influence.push(keyframe.in.influence * 0.01);
+      left.type.push(keyframe.out.type);
+      right.type.push(keyframe.in.type);
+      left.speed.push(keyframe.out.speed);
+      right.speed.push(keyframe.in.speed);
 
       if (keyframe.value.length) {
         for (j = 0; j < ylength; j++) {
           ys[j].push(keyframe.value[j]);
-          tangentLeft[j].push(keyframe.hasTangents ? keyframe.out.tangent[j] : null);
-          tangentRight[j].push(keyframe.hasTangents ? keyframe.in.tangent[j] : null);
+          left.tangent[j].push(keyframe.hasTangents ? keyframe.out.tangent[j] : null);
+          right.tangent[j].push(keyframe.hasTangents ? keyframe.in.tangent[j] : null);
         }
       } else {
         ys[0].push(keyframe.value);
-        tangentLeft[0].push(keyframe.out.tangent);
-        tangentRight[0].push(keyframe.in.tangent);
+        left.tangent[0].push(keyframe.out.tangent);
+        right.tangent[0].push(keyframe.in.tangent);
       }
     }
 
     for (j = 0; j < ylength; j++) {
-      bounds[j] = findBounds(ys[j]);
+      if (data.min && data.max) {
+        bounds[j] = [data.min[j], data.max[j]];
+      } else {
+        bounds[j] = findBounds(ys[j]);
+      }
+
       ys[j] = boundData(ys[j], bounds[j]);
-      tangentLeft[j] = scaleData(tangentLeft[j], bounds[j]);
-      tangentRight[j] = scaleData(tangentRight[j], bounds[j]);
+      left.tangent[j] = scaleData(left.tangent[j], bounds[j]);
+      right.tangent[j] = scaleData(right.tangent[j], bounds[j]);
     }
 
     return {
-      x: normalizeData(xs), 
-      y: ys, 
-      left: left, 
+      x: normalizeData(xs),
+      y: ys,
+      left: left,
       right: right,
-      tangentLeft: tangentLeft,
-      tangentRight: tangentRight
+      bounds: bounds,
+      start: data.startTime,
+      duration: data.duration
     };
   }
 
   function dimensionalInterpolation(values, epsilon) {
     var curves = [];
     for (var j = 0; j < values.y.length; j++) {
-      var fit = buildCurve(values.x, values.y[j], values.left, values.right, values.tangentLeft[j], values.tangentRight[j]);
+      var fit = buildCurve(values.x,
+                           values.y[j],
+                           {type: values.left.type,
+                            speed: values.left.speed,
+                            influence: values.left.influence,
+                            tangent: values.left.tangent[j]},
+                           {type: values.right.type,
+                            speed: values.right.speed,
+                            influence: values.right.influence,
+                            tangent: values.right.tangent[j]});
       curves.push(fit);
     }
 
@@ -185,7 +236,7 @@ var cyclops = function() {
     var curve = {};
     for (var key in data) {
       if (data.hasOwnProperty(key)) {
-        var generate = extractProperty(data[key].keys);
+        var generate = extractProperty(data[key]);
         curve[key] = {func: generate};
       }
     }
@@ -194,7 +245,8 @@ var cyclops = function() {
   }
 
   return {
-    interpolate: interpolate,
+    interpolateCubic: interpolateCubic,
+    interpolateLinear: interpolateLinear,
     buildCurve: buildCurve,
     findIndex: findIndex,
     normalizeData: normalizeData,
