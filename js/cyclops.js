@@ -12,8 +12,17 @@ var cyclops = function() {
     t = (x0-x[p]) / dx;
     it = 1-t;
 
-    xleftp = x[p] + (left.influence[p] * dx);
-    xrightp = x[p+1] - (right.influence[p+1] * dx);
+    xleftp = x[p] + (left.influence[p] * dx) + (speedL * tanL * dx);
+    xrightp = x[p+1] - (right.influence[p+1] * dx) + (speedR * tanR * dx);
+
+    // xleftp = x[p] + (left.influence[p] * dx) + (speedL * tanL);
+    // xrightp = x[p+1] - (right.influence[p+1] * dx) + (speedR * tanR);
+
+    // xleftp = x[p] + (left.influence[p] * dx) + (speedL * tanL * dx);
+    // xrightp = x[p+1] - (right.influence[p+1] * dx) + (speedR * tanR * dx);
+
+    // xleftp = x[p] + (left.influence[p] * dx / speedL);
+    // xrightp = x[p+1] - (right.influence[p+1] * dx / speedR);
 
     yleftp = (tanL && !isNaN(tanL)) ? y[p] + tanL : y[p];
     yrightp = (tanR && !isNaN(tanR)) ? y[p+1] + tanR : y[p+1];
@@ -185,6 +194,9 @@ var cyclops = function() {
       left.tangent[j] = scaleData(left.tangent[j], bounds[j]);
       right.tangent[j] = scaleData(right.tangent[j], bounds[j]);
     }
+
+    left.speed = scaleData(left.speed, bounds[0]);
+    right.speed = scaleData(right.speed, bounds[0]);
 
     return {
       x: normalizeData(xs),
