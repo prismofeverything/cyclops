@@ -2,7 +2,7 @@ var previousTime    = 0;
 var tweenTime       = 0;
 
 var tweenDuration   = keyframeData.FunFun.properties.position.duration;
-var curve           = cyclops.loadCurve(keyframeData.FunFun.properties);
+var curve           = cyclops.loadVectorCurve(keyframeData.FunFun.properties);
 
 function update(){
 
@@ -27,11 +27,13 @@ function update(){
 
 function updateCyclopsPreview(t) {
   var position    = curve.position.func(t);
-  var scale       = curve.scale.func(t)[0] * 0.5 + 0.5;
-  var rotation    = curve.rotation.func(t)[0] * 360;
+  var scale       = (curve.scale.func(t)[0] / 100) * 0.5 + 0.5;
+  var rotation    = curve.rotation.func(t)[0]; // * 360;
 
-  var x = rawFrameData["position"].min[0] + position[0] * (rawFrameData["position"].max[0] - rawFrameData["position"].min[0]);
-  var y = rawFrameData["position"].min[1] + position[1] * (rawFrameData["position"].max[1] - rawFrameData["position"].min[1]);
+  var x = position[0]; 
+  var y = position[1];
+  // var x = rawFrameData["position"].min[0] + position[0] * (rawFrameData["position"].max[0] - rawFrameData["position"].min[0]);
+  // var y = rawFrameData["position"].min[1] + position[1] * (rawFrameData["position"].max[1] - rawFrameData["position"].min[1]);
 
   document.getElementById("cyclopsSquare").style.webkitTransform = "translate(" + x + "px, " + y + "px) rotate(" + rotation + "deg) scale(" + scale + ", " + scale + ")";
 }
@@ -81,10 +83,10 @@ function drawGraph(func, propertyName, valueIndex) {
   ctx.beginPath();
   ctx.moveTo(0,func(0)[valueIndex] * yScale + yOffset);
   for(var i = 0; i < rawFrameData[propertyName].data.length; i++){
-
     var frm = rawFrameData[propertyName].data[i];
     var t = frm["t"] / tweenDuration;
-    ctx.lineTo(t * canvas.width, func(t)[valueIndex] * yScale + yOffset);
+    var rawVal = (func(t)[valueIndex] - rawFrameData[propertyName].min[valueIndex]) / (rawFrameData[propertyName].max[valueIndex] - rawFrameData[propertyName].min[valueIndex]);
+    ctx.lineTo(t * canvas.width, rawVal * yScale + yOffset);
   }
   ctx.strokeStyle = 'green';
   ctx.stroke();

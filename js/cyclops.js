@@ -15,15 +15,6 @@ var cyclops = function() {
     xleftp = x[p] + (left.influence[p] * dx) + (speedL * tanL * dx);
     xrightp = x[p+1] - (right.influence[p+1] * dx) + (speedR * tanR * dx);
 
-    // xleftp = x[p] + (left.influence[p] * dx) + (speedL * tanL);
-    // xrightp = x[p+1] - (right.influence[p+1] * dx) + (speedR * tanR);
-
-    // xleftp = x[p] + (left.influence[p] * dx) + (speedL * tanL * dx);
-    // xrightp = x[p+1] - (right.influence[p+1] * dx) + (speedR * tanR * dx);
-
-    // xleftp = x[p] + (left.influence[p] * dx / speedL);
-    // xrightp = x[p+1] - (right.influence[p+1] * dx / speedR);
-
     yleftp = (tanL && !isNaN(tanL)) ? y[p] + tanL : y[p];
     yrightp = (tanR && !isNaN(tanR)) ? y[p+1] + tanR : y[p+1];
     
@@ -45,6 +36,99 @@ var cyclops = function() {
     var yo = it*y[p] + t*y[p+1];
 
     return [xo, yo];
+  }
+
+  function plus(a, b) {
+    var len = Math.min(a.length, b.length);
+    var c = new Array(len);
+    for (var l = 0; l < len; l++) {
+      c[l] = a[l] + b[l];
+    }
+    return c;
+  }
+
+  function minus(a, b) {
+    var len = Math.min(a.length, b.length);
+    var c = new Array(len);
+    for (var l = 0; l < len; l++) {
+      c[l] = a[l] - b[l];
+    }
+    return c;
+  }
+
+  function scale(a, n) {
+    var len = a.length;
+    var c = new Array(len);
+    for (var l = 0; l < len; l++) {
+      c[l] = n * a[l];
+    }
+    return c;
+  }
+
+  function zeros(n) {
+    var zero = new Array(n);
+    for (var z = 0; z < n; z++) {
+      zero[z] = 0;
+    }
+    return zero;
+  }
+
+  function interpolateCubicVector(x0, p, x, y, left, right) {
+    var dx, dy, t, tanL, tanR, speedL, speedR;
+    var len = y[0].length;
+    
+    dx = x[p+1] - x[p];
+    tanL = left.tangent[p];
+    if (!tanL) {
+      tanL = zeros(len);
+      tanL[0] = left.influence[p] * dx;
+    }
+
+    tanR = right.tangent[p+1];
+    if (!tanR) {
+      tanR = zeros(len);
+      tanR[0] = -right.influence[p+1] * dx;
+    }
+
+    speedL = left.speed[p];
+    speedR = right.speed[p+1];
+
+    t = (x0-x[p]) / dx;
+    it = 1-t;
+
+    leftP = plus(y[p], tanL);
+    rightP = plus(y[p+1], tanR);
+
+    var A = scale(y[p], it*it*it);
+    var B = scale(leftP, 3*it*it*t);
+    var C = scale(rightP, 3*it*t*t);
+    var D = scale(y[p+1], t*t*t);
+
+    return plus(A, plus(B, plus(C, D)));
+  }
+
+  function buildVectorCurve(values) {
+    var x = values.x;
+    var y = values.y;
+    var left = values.left;
+    var right = values.right;
+
+    return function(t) {
+      var n = x.length;
+      var p, q, mid;
+      p = 0;
+      q = n-1;
+      while(q-p>1) {
+        mid = Math.floor((p+q)/2);
+        if(x[mid] <= t) p = mid;
+        else q = mid;
+      }
+      // if (left.type[p] == "linear") {
+      //   return interpolateLinearVector(t, p, x, y);
+      // } else {
+        return interpolateCubicVector(t, p, x, y, left, right);
+      // }
+    }
   }
 
   function buildCurve(x, y, left, right) {
@@ -131,10 +215,69 @@ var cyclops = function() {
     return boundData(input, bounds);
   }
 
+  function gatherValues(data) {
+    function buildDirectional() {
+      return {
+        type: [],
+        influence: [],
+        speed: [],
+        tangent: []
+      };
+    }
+
+    function pushDirectionals(collector, directionals) {
+      collector.influence.push(directionals.influence * 0.01);
+      collector.type.push(directionals.type);
+      collector.speed.push(directionals.speed);
+      collector.tangent.push(directionals.tangent);
+      return collector;
+    }
+
+    var keys = data.keys;
+    var xs = [];
+    var ys = [];
+    var left = buildDirectional();
+    var right = buildDirectional();
+    var min = data.min;
+    var max = data.max;
+    var bounds = [min, max];
+    var i, j;
+
+    for (i = 0; i < keys.length; i++) {
+      var keyframe = keys[i];
+      xs.push(keyframe.time);
+      ys.push(keyframe.value.length ? keyframe.value : [keyframe.value]);
+      pushDirectionals(right, keyframe.in);
+      pushDirectionals(left, keyframe.out);
+    }
+
+    return {
+      x: normalizeData(xs),
+      y: ys,
+      left: left,
+      right: right,
+      bounds: bounds,
+      start: data.startTime,
+      duration: data.duration
+    };
+  }
+
+  function dimensionalInterpolation(values, epsilon) {
+    var curve = buildVectorCurve(values);
+    return curve;
+  }
+
+  function gatherProperty(data) {
+    var values = gatherValues(data);
+    var generate = dimensionalInterpolation(values);
+    return generate;
+  }
+
   function extractValues(data) {
     var keys = data.keys;
     var xs = [];
     var ys = [];
+    var fs = [];
 
     var left = {
       type: [],
@@ -209,7 +352,7 @@ var cyclops = function() {
     };
   }
 
-  function dimensionalInterpolation(values, epsilon) {
+  function linearInterpolation(values, epsilon) {
     var curves = [];
     for (var j = 0; j < values.y.length; j++) {
       var fit = buildCurve(values.x,
@@ -239,7 +382,7 @@ var cyclops = function() {
 
   function extractProperty(data) {
     var values = extractValues(data);
-    var generate = dimensionalInterpolation(values);
+    var generate = linearInterpolation(values);
 
     return generate;
   }
@@ -256,15 +399,33 @@ var cyclops = function() {
     return curve;
   }
 
+  function loadVectorCurve(data) {
+    var curve = {};
+    for (var key in data) {
+      if (data.hasOwnProperty(key)) {
+        var generate = gatherProperty(data[key]);
+        curve[key] = {func: generate};
+      }
+    }
+
+    return curve;
+  }
+
   return {
     interpolateCubic: interpolateCubic,
+    interpolateCubicVector: interpolateCubicVector,
     interpolateLinear: interpolateLinear,
     buildCurve: buildCurve,
+    buildVectorCurve: buildVectorCurve,
     findIndex: findIndex,
     normalizeData: normalizeData,
-    extractValues: extractValues,
+    gatherValues: gatherValues,
+    gatherProperty: gatherProperty,
     dimensionalInterpolation: dimensionalInterpolation,
+    extractValues: extractValues,
     extractProperty: extractProperty,
-    loadCurve: loadCurve
+    linearInterpolation: linearInterpolation,
+    loadCurve: loadCurve,
+    loadVectorCurve: loadVectorCurve
   }
 } ();
