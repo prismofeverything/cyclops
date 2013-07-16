@@ -78,11 +78,17 @@ var cyclops = function() {
     var index = near[0];
     var diff = x - index;
 
+    var attempts = 0;
+
     while (Math.abs(diff) > epsilon) {
       guess = guess + diff * 0.5;
       near = at(guess);
       index = near[0];
       diff = x - index;
+      attempts++;
+      if(attempts > 1000){
+        throw("Exceeded max attempts in findIndex");
+      }
     }
 
     return guess;
