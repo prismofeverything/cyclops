@@ -116,8 +116,31 @@ function padDigits(number, digits) {
 
 function updateGraph(){
   var property = document.getElementById("property").value;
-    var parts = property.split("|");
+  var parts = property.split("|");
+  
+  if(keyframeData[currentCurveName].properties[parts[0]]){
     drawGraph( curve[parts[0]].func, parts[0], Number(parts[1]));
+  } else {
+    drawEmptyGraph(parts[0]);
+  }
+}
+
+function drawEmptyGraph(propertyName) {
+  var canvas = document.getElementById("graph");
+  var ctx = document.getElementById("graph").getContext("2d");
+
+  var yScale = canvas.height / 2;
+  var yOffset = canvas.height / 4;
+
+  ctx.fillStyle = "#c0c0c0";
+  ctx.fillRect(0,0,canvas.width, canvas.height);
+
+  ctx.fillStyle = "#f0f0f0";
+  ctx.fillRect(0,yOffset, canvas.width, yScale);
+
+  ctx.font = "16px Arial";
+  ctx.fillStyle = "black";
+  ctx.fillText("No data for property: " + propertyName, 20, 40);
 }
 
 function drawGraph(func, propertyName, valueIndex) {
