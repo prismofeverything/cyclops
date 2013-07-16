@@ -11,13 +11,12 @@ function loadCurve(curveName){
 
   console.log("loading curve: " + curveName);
 
-  curve = cyclops.loadCurve(keyframeData[curveName].properties);
+  curve = cyclops.loadVectorCurve(keyframeData[curveName].properties);
   tweenDuration = keyframeData[curveName].properties.position.duration;
   
   currentCurveName  = curveName;
   tweenTime = 0;
 }
-
 
 function update(){
 
@@ -26,7 +25,6 @@ function update(){
   tweenTime += (now - previousTime) * 0.001;
   previousTime = now;
 
-  
   // loop
   if(tweenTime >= tweenDuration){
     tweenTime = 0;
@@ -47,13 +45,11 @@ function updateCyclopsPreview(t) {
   var currentCurveProps = keyframeData[currentCurveName].properties;
   try{
   var position    = curve.position.func(t);
-  var scale       = curve.scale ? (curve.scale.func(t)[0] * (currentCurveProps["scale"].max[0] - currentCurveProps["scale"].min[0]) + currentCurveProps["scale"].min[0]) : 100;
-  var rotation    = curve.rotation ? (curve.rotation.func(t)[0] * (currentCurveProps["rotation"].max[0] - currentCurveProps["rotation"].min[0]) + currentCurveProps["rotation"].min[0]) : 0;
+  var scale       = curve.scale ? curve.scale.func(t)[0] / 100 : 1;
+  var rotation    = curve.rotation ? curve.rotation.func(t)[0] : 0;
 
-  var x = currentCurveProps["position"].min[0] + (position[0] * (currentCurveProps["position"].max[0] - currentCurveProps["position"].min[0]));
-  var y = currentCurveProps["position"].min[1] + (position[1] * (currentCurveProps["position"].max[1] - currentCurveProps["position"].min[1]));
-  
-  scale = scale / 100;
+  var x = position[0]; 
+  var y = position[1];
 
   document.getElementById("cyclopsSquare").style.webkitTransform = "translate(" + x + "px, " + y + "px) rotate(" + rotation + "deg) scale(" + scale + ", " + scale + ")";
   document.getElementById("cyclopsSquare").style.border = "0px none";
@@ -67,8 +63,8 @@ function updateSourcePreview(t) {
   var currentCurveProps = keyframeData[currentCurveName].properties;
 
   var rawPosition = currentCurveProps["position"].rawFrameData;
-  var rawScale    = currentCurveProps["scale"];// ? currentCurveProps["scale"].rawFrameData : 1;
-  var rawRotation = currentCurveProps["rotation"];// ? currentCurveProps["rotation"].rawFrameData : 0;
+  var rawScale    = currentCurveProps["scale"];
+  var rawRotation = currentCurveProps["rotation"];
 
 
   var seconds = t * tweenDuration;
@@ -157,38 +153,34 @@ function drawGraph(func, propertyName, valueIndex) {
   ctx.fillRect(0,yOffset, canvas.width, yScale);
 
   var rawData = keyframeData[currentCurveName].properties.position.rawFrameData;
-
-  //ctx.beginPath();
-
-  
-  for(var i = 0; i < rawData.length; i++){
-    var t = rawData[i]["t"] / tweenDuration;
-    try{
-      ctx.strokeStyle = 'green';
-      ctx.beginPath();
-      ctx.arc(t * canvas.width, func(t)[valueIndex] * yScale + yOffset , 1, 0, Math.PI * 2);
-      ctx.stroke();
-    } catch(e){
-      ctx.strokeStyle = 'black';
-      ctx.beginPath();
-      ctx.arc(t * canvas.width, yScale + yOffset * 1.5, 0.5, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-  }
- // ctx.stroke();
-
   var prop = keyframeData[currentCurveName].properties[propertyName];
+  function scaleData(v) {
+    var bounded = (v - prop.min[valueIndex]) / (prop.max[valueIndex] - prop.min[valueIndex]);
+    return (bounded * yScale) + yOffset;
+  }
+
+  ctx.beginPath();
+  ctx.moveTo(0, scaleData(func(0)[valueIndex]));
+  for(var i = 0; i < rawData.length; i++) {
+    var frm = rawData[i];
+    var t = frm["t"] / tweenDuration;
+    var rawVal = scaleData(func(t)[valueIndex]);
+    ctx.lineTo(t * canvas.width, rawVal);
+  }
+  ctx.strokeStyle = 'green';
+  ctx.stroke();
+
   ctx.beginPath();
    try{
       ctx.moveTo(0, func(0)[valueIndex] * yScale + yOffset);
     } catch(e){
       ctx.moveTo(0,0);
     }
-  for(var i = 0; i < rawData.length; i++){
+  for(var i = 0; i < rawData.length; i++) {
     var frm = rawData[i];
     var t = frm["t"] / tweenDuration;
-    var rawVal = (frm["val"][valueIndex] - prop.min[valueIndex]) / (prop.max[valueIndex] - prop.min[valueIndex]);
-    ctx.lineTo(t * canvas.width, rawVal * yScale + yOffset);
+    var rawVal = scaleData(frm["val"][valueIndex]);
+    ctx.lineTo(t * canvas.width, rawVal);
   }
   ctx.strokeStyle = 'red';
   ctx.stroke();
