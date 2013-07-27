@@ -44,15 +44,15 @@ function updateCyclopsPreview(t) {
   
   var currentCurveProps = keyframeData[currentCurveName].properties;
   try{
-  var position    = curve.position.func(t);
-  var scale       = curve.scale ? curve.scale.func(t)[0] / 100 : 1;
-  var rotation    = curve.rotation ? curve.rotation.func(t)[0] : 0;
+    var position    = curve.position.func(t);
+    var scale       = curve.scale ? curve.scale.func(t)[0] / 100 : 1;
+    var rotation    = curve.rotation ? curve.rotation.func(t)[0] : 0;
 
-  var x = position[0]; 
-  var y = position[1];
+    var x = position[0]; 
+    var y = position[1];
 
-  document.getElementById("cyclopsSquare").style.webkitTransform = "translate(" + x + "px, " + y + "px) rotate(" + rotation + "deg) scale(" + scale + ", " + scale + ")";
-  document.getElementById("cyclopsSquare").style.border = "0px none";
+    document.getElementById("cyclopsSquare").style.webkitTransform = "translate(" + x + "px, " + y + "px) rotate(" + rotation + "deg) scale(" + scale + ", " + scale + ")";
+    document.getElementById("cyclopsSquare").style.border = "0px none";
   } catch(e){
     document.getElementById("cyclopsSquare").style.border = "1px solid red";
   }
