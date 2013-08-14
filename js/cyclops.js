@@ -34,6 +34,11 @@ var cyclops = function() {
     return Math.sqrt(sum);
   }
 
+  function normalize(d) {
+    var length = magnitude(d);
+    return scale(d, 1 / length);
+  }
+
   function zeros(n) {
     var zero = new Array(n);
     for (var z = 0; z < n; z++) {
@@ -179,7 +184,8 @@ var cyclops = function() {
     return function(t) {
       var p = findIndex(t);
 
-      if (values.left.type[p] == "linear") {
+      if (values.left.type && values.left.type[p] == "linear") {
+      // if (true) { 
         return interpolateLinear(t, 
                                  values.position.left[p], 
                                  values.position.right[p]);
@@ -281,6 +287,66 @@ var cyclops = function() {
     };
   }
 
+  function gatherFrameValues(data) {
+    var frames = data.rawFrameData;
+    var xs = [];
+    var ys = [];
+    for (var j = 0; j < frames.length; j++) {
+      var frame = frames[j];
+      xs.push(frame.t);
+      ys.push(frame.val.length ? frame.val : [frame.val]);
+    }
+
+    return {
+      x: xs,
+      y: ys,
+      start: data.startTime,
+      duration: data.duration
+    }
+  }
+
+  function constructTangents(values) {
+    var left = {tangent: []};
+    var right = {tangent: []};
+    var influence = 5;
+    var length = values.y.length;
+    var slope, rightHalf, rightTangent, leftHalf, leftTangent;
+
+    // find all the tangents in the middle
+    for (var k = 1; k < length-1; k++) {
+      // slope = normalize(minus(values.y[k+1], values.y[k-1]));
+      slope = minus(values.y[k+1], values.y[k-1]);
+      console.log("after: " + values.y[k+1] + ", before: " + values.y[k-1] + ", slope: " + slope);
+
+      rightHalf = (values.x[k] - values.x[k-1]) * influence;
+      rightTangent = scale(slope, -rightHalf);
+
+      leftHalf = (values.x[k+1] - values.x[k]) * influence;
+      leftTangent = scale(slope, leftHalf);
+
+      right.tangent[k] = rightTangent;
+      left.tangent[k] = leftTangent;
+    }
+
+    // now do the extremes
+    slope = normalize(minus(values.y[1], values.y[0]));
+    leftHalf = (values.x[1] - values.x[0]) * influence * 0.5;
+    left.tangent[0] = scale(slope, leftHalf);
+
+    slope = normalize(minus(values.y[length-1], values.y[length-2]));
+    rightHalf = (values.x[length-1] - values.x[length-2]) * influence * 0.5;
+    right.tangent[length-1] = scale(slope, -rightHalf);
+
+    console.log(values);
+    console.log(left);
+    console.log(right);
+
+    return {
+      left: left,
+      right: right
+    }
+  }
+
   function dimensionalInterpolation(values, epsilon) {
     var curve = buildCurve(values);
     values.original = curve;
@@ -297,11 +363,20 @@ var cyclops = function() {
     return generate;
   }
 
+  function gatherFrameProperty(data) {
+    var values = gatherFrameValues(data);
+    var tangents = constructTangents(values);
+    values.left = tangents.left;
+    values.right = tangents.right;
+    var generate = dimensionalInterpolation(values);
+    return generate;
+  }
+
   function loadVectorCurve(data) {
     var curve = {};
     for (var key in data) {
       if (data.hasOwnProperty(key)) {
-        var generate = gatherProperty(data[key]);
+        var generate = gatherFrameProperty(data[key]);
         curve[key] = generate;
       }
     }

@@ -22,7 +22,7 @@ function update(){
 
   var now = new Date().getTime();
 
-  tweenTime += (now - previousTime) * 0.001;
+  tweenTime += (now - previousTime) * 0.0002;
   previousTime = now;
 
   // loop
@@ -68,7 +68,6 @@ function updateSourcePreview(t) {
 
   var seconds = t * tweenDuration;
   var idx = Math.floor(rawPosition.length * t);
- 
 
   var scale       = rawScale ? (rawScale[idx].val[0] / 100) : 1;
   var rotation    = rawRotation ? (rawRotation[idx].val[0]) : 0;
@@ -88,7 +87,8 @@ window.onload = function() {
     document.getElementById("curveList").appendChild(opt);
   }
 
-  currentCurveName = "lots_of_keys"; // document.getElementById("curveList").value;
+  currentCurveName = document.getElementById("curveList").value;
+  // currentCurveName = "lots_of_keys";
 
   document.getElementById("curveList").onchange = function(){
     loadCurve(document.getElementById("curveList").value);
@@ -115,7 +115,7 @@ function updateGraph(){
   
   if(keyframeData[currentCurveName].properties[parts[0]]){
     drawGraph(curve[parts[0]].func, parts[0], Number(parts[1]));
-    drawSpeed(curve[parts[0]].normalizedSpeedCurve, parts[0], 1);
+    // drawSpeed(curve[parts[0]].normalizedSpeedCurve, parts[0], 1);
   } else {
     drawEmptyGraph(parts[0]);
   }
@@ -156,19 +156,8 @@ function drawGraph(func, propertyName, valueIndex) {
   var prop = keyframeData[currentCurveName].properties[propertyName];
   function scaleData(v) {
     var bounded = (v - prop.min[valueIndex]) / (prop.max[valueIndex] - prop.min[valueIndex]);
-    return (bounded * yScale) + yOffset;
+    return canvas.height - ((bounded * yScale) + yOffset);
   }
-
-  ctx.beginPath();
-  ctx.moveTo(0, scaleData(func(0)[valueIndex]));
-  for(var i = 0; i < rawData.length; i++) {
-    var frm = rawData[i];
-    var t = frm["t"] / tweenDuration;
-    var rawVal = scaleData(func(t)[valueIndex]);
-    ctx.lineTo(t * canvas.width, rawVal);
-  }
-  ctx.strokeStyle = 'green';
-  ctx.stroke();
 
   ctx.beginPath();
   try{
@@ -180,36 +169,58 @@ function drawGraph(func, propertyName, valueIndex) {
     var frm = rawData[i];
     var t = frm["t"] / tweenDuration;
     var rawVal = scaleData(frm["val"][valueIndex]);
-    ctx.lineTo(t * canvas.width, rawVal);
+    // ctx.lineTo(t * canvas.width, rawVal);
+    ctx.arc(t * canvas.width, rawVal, 3, 0, 2 * Math.PI);
   }
-  ctx.strokeStyle = 'red';
-  ctx.stroke();
-}
-
-function drawSpeed(func, propertyName, valueIndex) {
-  var canvas = document.getElementById("speedgraph");
-  var ctx = document.getElementById("speedgraph").getContext("2d");
-
-  var yScale = canvas.height / 2;
-  var yOffset = canvas.height / 4;
-
-  ctx.fillStyle = "#c0c0c0";
-  ctx.fillRect(0,0,canvas.width, canvas.height);
-
-  ctx.fillStyle = "#f0f0f0";
-  ctx.fillRect(0, yOffset, canvas.width, yScale);
-
-  var rawData = keyframeData[currentCurveName].properties.position.rawFrameData;
-  var prop = keyframeData[currentCurveName].properties[propertyName];
+  ctx.strokeStyle = "#ee9999";
+  ctx.fillStyle = "#ee9999";
+  // ctx.lineWidth = 5;
+  ctx.fill();
 
   ctx.beginPath();
-  ctx.moveTo(0, func(0) * yScale + yOffset);
-  for(var i = 0; i < rawData.length; i++) {
-    var frm = rawData[i];
-    var t = frm["t"] / tweenDuration;
-    var rawVal = canvas.height - (func(t) * yScale + yOffset);
+  ctx.moveTo(0, scaleData(func(0)[valueIndex]));
+  for(var t = 0; t < tweenDuration; t+=0.001) {
+    // var frm = rawData[i];
+    // var t = frm["t"] / tweenDuration;
+    var rawVal = scaleData(func(t)[valueIndex]);
     ctx.lineTo(t * canvas.width, rawVal);
   }
-  ctx.strokeStyle = 'green';
+  // for(var i = 0; i < rawData.length; i++) {
+  //   var frm = rawData[i];
+  //   var t = frm["t"] / tweenDuration;
+  //   var rawVal = scaleData(func(t)[valueIndex]);
+  //   ctx.lineTo(t * canvas.width, rawVal);
+  // }
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = 1;
   ctx.stroke();
+
 }
+
+// function drawSpeed(func, propertyName, valueIndex) {
+//   var canvas = document.getElementById("speedgraph");
+//   var ctx = document.getElementById("speedgraph").getContext("2d");
+
+//   var yScale = canvas.height / 2;
+//   var yOffset = canvas.height / 4;
+
+//   ctx.fillStyle = "#c0c0c0";
+//   ctx.fillRect(0,0,canvas.width, canvas.height);
+
+//   ctx.fillStyle = "#f0f0f0";
+//   ctx.fillRect(0, yOffset, canvas.width, yScale);
+
+//   var rawData = keyframeData[currentCurveName].properties.position.rawFrameData;
+//   var prop = keyframeData[currentCurveName].properties[propertyName];
+
+//   ctx.beginPath();
+//   ctx.moveTo(0, func(0) * yScale + yOffset);
+//   for(var i = 0; i < rawData.length; i++) {
+//     var frm = rawData[i];
+//     var t = frm["t"] / tweenDuration;
+//     var rawVal = canvas.height - (func(t) * yScale + yOffset);
+//     ctx.lineTo(t * canvas.width, rawVal);
+//   }
+//   ctx.strokeStyle = 'green';
+//   ctx.stroke();
+// }
