@@ -66,7 +66,6 @@ function updateSourcePreview(t) {
   var rawScale    = currentCurveProps["scale"];
   var rawRotation = currentCurveProps["rotation"];
 
-
   var seconds = t * tweenDuration;
   var idx = Math.floor(rawPosition.length * t);
  
@@ -89,7 +88,7 @@ window.onload = function() {
     document.getElementById("curveList").appendChild(opt);
   }
 
-  currentCurveName = document.getElementById("curveList").value;
+  currentCurveName = "lots_of_keys"; // document.getElementById("curveList").value;
 
   document.getElementById("curveList").onchange = function(){
     loadCurve(document.getElementById("curveList").value);
@@ -115,7 +114,8 @@ function updateGraph(){
   var parts = property.split("|");
   
   if(keyframeData[currentCurveName].properties[parts[0]]){
-    drawGraph( curve[parts[0]].func, parts[0], Number(parts[1]));
+    drawGraph(curve[parts[0]].func, parts[0], Number(parts[1]));
+    drawSpeed(curve[parts[0]].normalizedSpeedCurve, parts[0], 1);
   } else {
     drawEmptyGraph(parts[0]);
   }
@@ -147,10 +147,10 @@ function drawGraph(func, propertyName, valueIndex) {
   var yOffset = canvas.height / 4;
 
   ctx.fillStyle = "#c0c0c0";
-  ctx.fillRect(0,0,canvas.width, canvas.height);
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   ctx.fillStyle = "#f0f0f0";
-  ctx.fillRect(0,yOffset, canvas.width, yScale);
+  ctx.fillRect(0, yOffset, canvas.width, yScale);
 
   var rawData = keyframeData[currentCurveName].properties.position.rawFrameData;
   var prop = keyframeData[currentCurveName].properties[propertyName];
@@ -171,11 +171,11 @@ function drawGraph(func, propertyName, valueIndex) {
   ctx.stroke();
 
   ctx.beginPath();
-   try{
-      ctx.moveTo(0, func(0)[valueIndex] * yScale + yOffset);
-    } catch(e){
-      ctx.moveTo(0,0);
-    }
+  try{
+    ctx.moveTo(0, func(0)[valueIndex] * yScale + yOffset);
+  } catch(e){
+    ctx.moveTo(0,0);
+  }
   for(var i = 0; i < rawData.length; i++) {
     var frm = rawData[i];
     var t = frm["t"] / tweenDuration;
@@ -183,5 +183,33 @@ function drawGraph(func, propertyName, valueIndex) {
     ctx.lineTo(t * canvas.width, rawVal);
   }
   ctx.strokeStyle = 'red';
+  ctx.stroke();
+}
+
+function drawSpeed(func, propertyName, valueIndex) {
+  var canvas = document.getElementById("speedgraph");
+  var ctx = document.getElementById("speedgraph").getContext("2d");
+
+  var yScale = canvas.height / 2;
+  var yOffset = canvas.height / 4;
+
+  ctx.fillStyle = "#c0c0c0";
+  ctx.fillRect(0,0,canvas.width, canvas.height);
+
+  ctx.fillStyle = "#f0f0f0";
+  ctx.fillRect(0, yOffset, canvas.width, yScale);
+
+  var rawData = keyframeData[currentCurveName].properties.position.rawFrameData;
+  var prop = keyframeData[currentCurveName].properties[propertyName];
+
+  ctx.beginPath();
+  ctx.moveTo(0, func(0) * yScale + yOffset);
+  for(var i = 0; i < rawData.length; i++) {
+    var frm = rawData[i];
+    var t = frm["t"] / tweenDuration;
+    var rawVal = canvas.height - (func(t) * yScale + yOffset);
+    ctx.lineTo(t * canvas.width, rawVal);
+  }
+  ctx.strokeStyle = 'green';
   ctx.stroke();
 }

@@ -42,6 +42,31 @@ var cyclops = function() {
     return zero;
   }
 
+  function integrate(f, a, b, dx) {
+    var u, c = 0;
+    dx = dx ? dx : (b-a) * 0.001;
+    var halfdx = dx * 0.5;
+    for (var t = a; t < b; t += dx) {
+      u = f(t); //f(t + halfdx);
+      c += u * dx;
+    }
+
+    return c;
+  }
+
+  function arcLength(f, a, b, dx) {
+    var u, v, m, l = 0;
+    dx = dx ? dx : (b-a) * 0.001;
+    for (var t = a; t < b; t += dx) {
+      u = f(t);
+      v = f(t+dx);
+      m = magnitude(minus(v, u));
+      l += m;
+    }
+
+    return l;
+  }
+
   function interpolateLinear(index, left, right) {
     var dx = right.x - left.x;
     var t = (index - left.x) / dx;
@@ -69,7 +94,7 @@ var cyclops = function() {
     return plus(A, plus(B, plus(C, D)));
   }
 
-  function interpolateQuartic(index, left, right) {
+  function interpolateQuintic(index, left, right) {
     var dx = right.x - left.x;
     var t = (index - left.x) / dx;
     var s = 1 - t;
@@ -108,48 +133,9 @@ var cyclops = function() {
   function buildCurve(values) {
     values.position = {left: [], right: []};
     values.speed = {left: [], right: []};
-    values.arclength = [];
+    values.arcLength = [];
 
-    for (var p = 0; p < values.x.length - 1; p++) {
-      var dx = values.x[p+1] - values.x[p];
-      var dy = minus(values.y[p+1], values.y[p]);
-      var mag = magnitude(dy);
-      // var mag = dy[0];
-      var speedL = values.left.speed[p] - dy[0];
-      var speedR = -values.right.speed[p+1] + dy[0];
-      var tanL = dx * values.left.influence[p] * speedL / mag;
-      var tanR = dx * values.right.influence[p+1] * speedR / mag;
-
-      var speedLeft = {
-        x: values.x[p],
-        y: [values.x[p]],
-        tangent: [tanL]
-      }
-      var speedRight = {
-        x: values.x[p+1],
-        y: [values.x[p+1]],
-        tangent: [tanR]
-      }
-
-      var positionLeft = {
-        x: values.x[p],
-        y: values.y[p],
-        tangent: values.left.tangent[p]
-      }
-      var positionRight = {
-        x: values.x[p+1],
-        y: values.y[p+1],
-        tangent: values.right.tangent[p+1]
-      }
-
-      values.position.left.push(positionLeft);
-      values.position.right.push(positionRight);
-
-      values.speed.left.push(speedLeft);
-      values.speed.right.push(speedRight);
-    }
-
-    return function(t) {
+    function findIndex(t) {
       var n = values.x.length;
       var p, q, mid;
       p = 0;
@@ -159,17 +145,46 @@ var cyclops = function() {
         if(values.x[mid] <= t) p = mid;
         else q = mid;
       }
+      
+      return p;
+    }
 
-      var index = interpolateLinear(t, 
-                                    values.speed.left[p], 
-                                    values.speed.right[p])[0];
+    for (var p = 0; p < values.x.length - 1; p++) {
+      var a = values.x[p];
+      var b = values.x[p+1];
+      var dx = b - a;
+      var dy = minus(values.y[p+1], values.y[p]);
+
+      var positionLeft = {
+        x: a,
+        y: values.y[p],
+        tangent: values.left.tangent[p]
+      }
+      var positionRight = {
+        x: b,
+        y: values.y[p+1],
+        tangent: values.right.tangent[p+1]
+      }
+      values.position.left.push(positionLeft);
+      values.position.right.push(positionRight);
+
+      var f = function(t) {
+        return interpolateCubic(t, positionLeft, positionRight);
+      }
+
+      values.arcLength = arcLength(f, a, b);
+      values.pixelsPerSecond = values.arcLength / values.duration;
+    }
+
+    return function(t) {
+      var p = findIndex(t);
 
       if (values.left.type[p] == "linear") {
-        return interpolateLinear(index, 
+        return interpolateLinear(t, 
                                  values.position.left[p], 
                                  values.position.right[p]);
       } else {
-        return interpolateCubic(index, 
+        return interpolateCubic(t, 
                                 values.position.left[p], 
                                 values.position.right[p]);
       }
@@ -295,9 +310,15 @@ var cyclops = function() {
   }
 
   return {
+    plus: plus,
+    minus: minus,
+    scale: scale,
+    zeros: zeros,
+    magnitude: magnitude,
+    arcLength: arcLength,
     interpolateLinear: interpolateLinear,
     interpolateCubic: interpolateCubic,
-    interpolateQuartic: interpolateQuartic,
+    interpolateQuintic: interpolateQuintic,
     interpolateHermite: interpolateHermite,
     buildCurve: buildCurve,
     normalizeData: normalizeData,
@@ -307,3 +328,181 @@ var cyclops = function() {
     loadVectorCurve: loadVectorCurve
   }
 } ();
+
+
+
+
+
+
+
+
+  // function buildCurve(values) {
+  //   values.position = {left: [], right: []};
+  //   values.speed = {left: [], right: []};
+  //   values.arcLength = [];
+
+  //   function findIndex(t) {
+  //     var n = values.x.length;
+  //     var p, q, mid;
+  //     p = 0;
+  //     q = n-1;
+  //     while(q-p>1) {
+  //       mid = Math.floor((p+q)/2);
+  //       if(values.x[mid] <= t) p = mid;
+  //       else q = mid;
+  //     }
+      
+  //     return p;
+  //   }
+
+  //   var speedMin = 1000000;
+  //   var speedMax = 0;
+
+  //   for (var p = 0; p < values.x.length - 1; p++) {
+  //     var a = values.x[p];
+  //     var b = values.x[p+1];
+  //     var dx = b - a;
+  //     var dy = minus(values.y[p+1], values.y[p]);
+
+  //     var positionLeft = {
+  //       x: a,
+  //       y: values.y[p],
+  //       tangent: values.left.tangent[p]
+  //     }
+  //     var positionRight = {
+  //       x: b,
+  //       y: values.y[p+1],
+  //       tangent: values.right.tangent[p+1]
+  //     }
+  //     values.position.left.push(positionLeft);
+  //     values.position.right.push(positionRight);
+
+  //     var f = function(t) {
+  //       return interpolateCubic(t, positionLeft, positionRight);
+  //     }
+
+  //     values.arcLength = arcLength(f, a, b);
+  //     values.pixelsPerSecond = values.arcLength; // / values.duration;
+
+  //     var speedL = values.left.speed[p];
+  //     var speedR = values.right.speed[p+1];
+  //     var tanL = dx * values.left.influence[p];
+  //     var tanR = -dx * values.right.influence[p+1];
+
+  //     var speedLeft = {
+  //       x: a,
+  //       y: [a, speedL],
+  //       tangent: [tanL, 0],
+  //       control: [tanL, 0]
+  //     }
+
+  //     var speedRight = {
+  //       x: b,
+  //       y: [b, speedR],
+  //       tangent: [tanR, 0],
+  //       control: [tanR, 0]
+  //     }
+
+  //     function controlSpeed(w, x, y, z) {
+  //       speedLeft.tangent[1] = w;
+  //       speedLeft.control[1] = x;
+  //       speedRight.control[1] = y;
+  //       speedRight.tangent[1] = z;
+  //     }
+
+  //     // find a match between integral of speed curve and arclength of position curve
+  //     var g = function(t) {
+  //       return interpolateQuintic(t, speedLeft, speedRight)[1];
+  //     }
+
+  //     function guessControl(previous, w, x, y, z) {
+  //       controlSpeed(w, x, y, z);
+  //       var newTarget = integrate(g, a, b);
+  //       var dnew = values.pixelsPerSecond - newTarget;
+  //       var dold = values.pixelsPerSecond - previous;
+        
+  //       return Math.abs(dnew) < Math.abs(dold) ? dnew : -dnew;
+  //     }
+
+  //     var target = integrate(g, a, b);
+
+  //     var w = 0, x = 0, y = 0, z = 0;
+  //     var df = values.pixelsPerSecond - target;
+  //     var step = 0.1;
+
+  //     var searching = true;
+  //     var v = 0;
+  //     while (searching && v < 30) {
+  //       v++;
+  //       var dw = guessControl(target, w + df * step, x, y, z);
+  //       var dx = guessControl(target, w, x + df * step, y, z);
+  //       var dy = guessControl(target, w, x, y + df * step, z);
+  //       var dz = guessControl(target, w, x, y, z + df * step);
+  //       w += dw;
+  //       x += dx;
+  //       y += dy;
+  //       z += dz;
+  //       controlSpeed(w, x, y, z);
+  //       target = integrate(g, a, b);
+  //       df = values.pixelsPerSecond - target;
+  //       // console.log("guesses: " + dw + "," + dx + "," + dy + "," + dz);
+
+  //       // console.log("speed: " + speedL + ":" + values.left.influence[p] + ", " + speedR + ":" + values.right.influence[p+1]);
+  //       console.log("arclength: " + values.pixelsPerSecond + ", target: " + target + ", difference: " + (values.pixelsPerSecond - target));
+  //     }
+
+  //     var u, c = 0;
+  //     var dx = (b-a) * 0.001;
+  //     var halfdx = dx * 0.5;
+  //     for (var t = a; t < b; t += dx) {
+  //       u = g(t);
+  //       speedMax = Math.max(speedMax, u);
+  //       speedMin = Math.min(speedMin, u);
+  //     }
+
+  //     console.log(speedLeft);
+  //     console.log(speedRight);
+
+  //     values.speed.left.push(speedLeft);
+  //     values.speed.right.push(speedRight);
+  //   }
+
+  //   console.log(values.speed.left);
+  //   console.log(values.speed.right);
+
+  //   console.log(speedMin);
+  //   console.log(speedMax);
+
+  //   values.speedMin = speedMin;
+  //   values.speedMax = speedMax;
+
+  //   values.speedCurve = function(t) {
+  //     var p = findIndex(t);
+  //     return interpolateQuintic(t, values.speed.left[p], values.speed.right[p]);
+  //   }
+
+  //   values.normalizedSpeedCurve = function(t) {
+  //     var index = t * values.duration + values.start;
+  //     var un = values.speedCurve(index)[1];
+  //     return (un - speedMin) / (speedMax - speedMin);
+  //   }
+
+  //   return function(t) {
+  //     var p = findIndex(t);
+  //     var index = interpolateQuintic(t, 
+  //                                    values.speed.left[p], 
+  //                                    values.speed.right[p])[1];
+
+  //     // var index = t;
+  //     if (values.left.type[p] == "linear") {
+  //       return interpolateLinear(index, 
+  //                                values.position.left[p], 
+  //                                values.position.right[p]);
+  //     } else {
+  //       return interpolateCubic(index, 
+  //                               values.position.left[p], 
+  //                               values.position.right[p]);
+  //     }
+  //   }
+  // }
+
