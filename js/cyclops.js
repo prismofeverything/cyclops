@@ -300,7 +300,7 @@ var cyclops = function() {
   }
 
   function gatherFrameValues(data) {
-    var frames = data.rawFrameData;
+    var frames = data.frameData;
     var xs = [];
     var ys = [];
     for (var j = 0; j < frames.length; j++) {
@@ -309,8 +309,8 @@ var cyclops = function() {
       ys.push(frame.val.length ? frame.val : [frame.val]);
     }
 
-    var min = data.min;
-    var max = data.max;
+    var min = data.begin;
+    var max = data.end;
     var bounds = [min, max];
 
     return {
