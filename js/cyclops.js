@@ -224,6 +224,18 @@ var cyclops = function() {
     return output;
   }
 
+  function boundVectorData(input, bounds) {
+    var output = [];
+    var min = bounds[0];
+    var max = bounds[1];
+
+    for(var i = 0; i < input.length; i++){
+      output.push( (input[i] - min[i]) / (max[i] - min[i]) );
+    }
+
+    return output;
+  }
+
   function scaleData(input, bounds) {
     var output = [];
     var scale = 1.0 / (bounds[1] - bounds[0]);
@@ -297,11 +309,16 @@ var cyclops = function() {
       ys.push(frame.val.length ? frame.val : [frame.val]);
     }
 
+    var min = data.min;
+    var max = data.max;
+    var bounds = [min, max];
+
     return {
       x: xs,
       y: ys,
       start: data.startTime,
-      duration: data.duration
+      duration: data.duration,
+      bounds: bounds
     }
   }
 
@@ -349,11 +366,19 @@ var cyclops = function() {
 
   function dimensionalInterpolation(values, epsilon) {
     var curve = buildCurve(values);
-    values.original = curve;
-    values.func = function(t) {
+    var func = function(t) {
       var index = t * values.duration + values.start;
       return curve(index);
     }
+
+    values.original = curve;
+    values.func = func;
+    values.normalizedFunc = function(t) {
+      var un = func(t);
+      var bounded = boundVectorData(un, values.bounds);
+      return bounded;
+    }
+
     return values;
   }
 
@@ -384,6 +409,25 @@ var cyclops = function() {
     return curve;
   }
 
+  var curves = {};
+
+  function loadCurves(data) {
+    for (var key in data) {
+      if (data.hasOwnProperty(key)) {
+        var generate = gatherFrameProperty(data[key]);
+        curves[key] = generate;
+      }
+    }
+  }
+
+  function getCurve(curveName, index) {
+    if (!index) index = 0;
+
+    return function(t) {
+      return curves[curveName].normalizedFunc(t)[index];
+    }
+  }
+
   return {
     plus: plus,
     minus: minus,
@@ -400,7 +444,9 @@ var cyclops = function() {
     gatherValues: gatherValues,
     gatherProperty: gatherProperty,
     dimensionalInterpolation: dimensionalInterpolation,
-    loadVectorCurve: loadVectorCurve
+    loadVectorCurve: loadVectorCurve,
+    loadCurves: loadCurves,
+    getCurve: getCurve
   }
 } ();
 
