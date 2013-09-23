@@ -309,8 +309,8 @@ var cyclops = function() {
       ys.push(frame.val.length ? frame.val : [frame.val]);
     }
 
-    var min = data.min;
-    var max = data.max;
+    var min = data.begin;
+    var max = data.end;
     var bounds = [min, max];
 
     return {
