@@ -97,8 +97,8 @@ window.onload = function() {
 
   loadCurve(currentCurveName);
 
-  update();
-  updateGraph();
+  // update();
+  // updateGraph();
 
   document.getElementById("property").onchange = function(){
     updateGraph();
