@@ -300,7 +300,7 @@ var cyclops = function() {
   }
 
   function gatherFrameValues(data) {
-    var frames = data.rawFrameData;
+    var frames = data.frameData;
     var xs = [];
     var ys = [];
     for (var j = 0; j < frames.length; j++) {
