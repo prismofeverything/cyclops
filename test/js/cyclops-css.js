@@ -34,7 +34,7 @@ function update(){
   
   requestAnimationFrame(update);
 
-  updateSourcePreview(t);
+  // updateSourcePreview(t);
   updateCyclopsPreview(t);
 
   document.getElementById("time").innerHTML = t;
