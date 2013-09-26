@@ -62,7 +62,7 @@ function updateSourcePreview(t) {
 
   var currentCurveProps = keyframeData[currentCurveName].properties;
 
-  var rawPosition = currentCurveProps["position"].rawFrameData;
+  var rawPosition = currentCurveProps["position"].frameData;
   var rawScale    = currentCurveProps["scale"];
   var rawRotation = currentCurveProps["rotation"];
 
@@ -97,8 +97,8 @@ window.onload = function() {
 
   loadCurve(currentCurveName);
 
-  // update();
-  // updateGraph();
+  update();
+  updateGraph();
 
   document.getElementById("property").onchange = function(){
     updateGraph();
@@ -152,7 +152,7 @@ function drawGraph(func, propertyName, valueIndex) {
   ctx.fillStyle = "#f0f0f0";
   ctx.fillRect(0, yOffset, canvas.width, yScale);
 
-  var rawData = keyframeData[currentCurveName].properties.position.rawFrameData;
+  var rawData = keyframeData[currentCurveName].properties.position.frameData;
   var prop = keyframeData[currentCurveName].properties[propertyName];
   function scaleData(v) {
     var bounded = (v - prop.min[valueIndex]) / (prop.max[valueIndex] - prop.min[valueIndex]);
@@ -210,7 +210,7 @@ function drawGraph(func, propertyName, valueIndex) {
 //   ctx.fillStyle = "#f0f0f0";
 //   ctx.fillRect(0, yOffset, canvas.width, yScale);
 
-//   var rawData = keyframeData[currentCurveName].properties.position.rawFrameData;
+//   var rawData = keyframeData[currentCurveName].properties.position.frameData;
 //   var prop = keyframeData[currentCurveName].properties[propertyName];
 
 //   ctx.beginPath();

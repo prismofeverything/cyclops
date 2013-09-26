@@ -52,7 +52,7 @@ var cyclops = function() {
     dx = dx ? dx : (b-a) * 0.001;
     var halfdx = dx * 0.5;
     for (var t = a; t < b; t += dx) {
-      u = f(t); //f(t + halfdx);
+      u = f(t);
       c += u * dx;
     }
 
@@ -99,6 +99,24 @@ var cyclops = function() {
     return plus(A, plus(B, plus(C, D)));
   }
 
+  function interpolateCatmullRom(index, left, right) {
+    var dx = right.x - left.x;
+    var t = (index - left.x) / dx;
+    var s = 1 - t;
+
+    var p0 = left.tangent;
+    var p1 = left.y;
+    var p2 = right.y;
+    var p3 = right.tangent;
+
+    var A = scale(plus(scale(p0, -0.5), plus(scale(p1, 1.5), plus(scale(p2, -1.5), scale(p3, 0.5)))), t*t*t);
+    var B = scale(plus(scale(p0, 1.0), plus(scale(p1, -2.5), plus(scale(p2, 2.0), scale(p3, -0.5)))), t*t);
+    var C = scale(plus(scale(p0, -0.5), scale(p2, 0.5)), t);
+    var D = p1;
+
+    return plus(A, plus(B, plus(C, D)));
+  }
+
   function interpolateQuintic(index, left, right) {
     var dx = right.x - left.x;
     var t = (index - left.x) / dx;
@@ -135,24 +153,24 @@ var cyclops = function() {
     return plus(A, plus(D, minus(U, V)));
   }
 
+  function findIndex(t, v) {
+    var n = v.length;
+    var p, q, mid;
+    p = 0;
+    q = n-1;
+    while(q-p>1) {
+      mid = Math.floor((p+q)/2);
+      if(v[mid] <= t) p = mid;
+      else q = mid;
+    }
+    
+    return p;
+  }
+
   function buildCurve(values) {
     values.position = {left: [], right: []};
     values.speed = {left: [], right: []};
     values.arcLength = [];
-
-    function findIndex(t) {
-      var n = values.x.length;
-      var p, q, mid;
-      p = 0;
-      q = n-1;
-      while(q-p>1) {
-        mid = Math.floor((p+q)/2);
-        if(values.x[mid] <= t) p = mid;
-        else q = mid;
-      }
-      
-      return p;
-    }
 
     for (var p = 0; p < values.x.length - 1; p++) {
       var a = values.x[p];
@@ -173,24 +191,26 @@ var cyclops = function() {
       values.position.left.push(positionLeft);
       values.position.right.push(positionRight);
 
-      var f = function(t) {
-        return interpolateCubic(t, positionLeft, positionRight);
-      }
+      // var f = function(t) {
+      //   // return interpolateCubic(t, positionLeft, positionRight);
+      //   return interpolateLinear(t, positionLeft, positionRight);
+      // }
 
-      values.arcLength = arcLength(f, a, b);
-      values.pixelsPerSecond = values.arcLength / values.duration;
+      // values.arcLength = arcLength(f, a, b);
+      // values.pixelsPerSecond = values.arcLength / values.duration;
     }
 
     return function(t) {
-      var p = findIndex(t);
+      var p = findIndex(t, values.x);
 
       if (values.left.type && values.left.type[p] == "linear") {
-      // if (true) { 
         return interpolateLinear(t, 
                                  values.position.left[p], 
                                  values.position.right[p]);
       } else {
-        return interpolateCubic(t, 
+        // return interpolateLinear(t, 
+        return interpolateCatmullRom(t, 
+        // return interpolateCubic(t, 
                                 values.position.left[p], 
                                 values.position.right[p]);
       }
@@ -322,18 +342,40 @@ var cyclops = function() {
     }
   }
 
-  function constructTangents(values) {
+  function placeTangents(values) {
     var left = {tangent: []};
     var right = {tangent: []};
-    var influence = 5;
+    var influence = 0;
     var length = values.y.length;
     var slope, rightHalf, rightTangent, leftHalf, leftTangent;
 
     // find all the tangents in the middle
     for (var k = 1; k < length-1; k++) {
-      // slope = normalize(minus(values.y[k+1], values.y[k-1]));
-      slope = minus(values.y[k+1], values.y[k-1]);
-      console.log("after: " + values.y[k+1] + ", before: " + values.y[k-1] + ", slope: " + slope);
+      left.tangent[k] = values.y[k-1];
+      right.tangent[k] = values.y[k+1];
+    }
+
+    // now do the extremes
+    left.tangent[0] = minus(scale(values.y[0], 2), values.y[1]);
+    right.tangent[length-1] = minus(scale(values.y[length-1], 2), values.y[length-2]);
+
+    return {
+      left: left,
+      right: right
+    }
+  }
+
+  function constructTangents(values) {
+    var left = {tangent: []};
+    var right = {tangent: []};
+    var influence = 0;
+    var length = values.y.length;
+    var slope, rightHalf, rightTangent, leftHalf, leftTangent;
+
+    // find all the tangents in the middle
+    for (var k = 1; k < length-1; k++) {
+      slope = normalize(minus(values.y[k+1], values.y[k-1]));
+      console.log("before: " + values.x[k-1] + ":" + values.y[k-1] + ", during: " + values.x[k] + ":"  + values.y[k] + ", after: " + values.x[k+1] + ":"  + values.y[k+1] + ", slope: " + slope);
 
       rightHalf = (values.x[k] - values.x[k-1]) * influence;
       rightTangent = scale(slope, -rightHalf);
@@ -355,8 +397,8 @@ var cyclops = function() {
     right.tangent[length-1] = scale(slope, -rightHalf);
 
     console.log(values);
-    console.log(left);
-    console.log(right);
+    console.log("" + left.tangent);
+    console.log("" + right.tangent);
 
     return {
       left: left,
@@ -390,7 +432,8 @@ var cyclops = function() {
 
   function gatherFrameProperty(data) {
     var values = gatherFrameValues(data);
-    var tangents = constructTangents(values);
+    // var tangents = constructTangents(values);
+    var tangents = placeTangents(values);
     values.left = tangents.left;
     values.right = tangents.right;
     var generate = dimensionalInterpolation(values);
