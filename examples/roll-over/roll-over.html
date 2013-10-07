@@ -1,6 +1,7 @@
 <html>
 <head>
 	<style>
+	
 	#buttonExample {
 		background:#a0a0a0;
 		position:absolute;
@@ -11,7 +12,7 @@
 
 	</style>
 
-	<script src="roll-over-curve-tens.js"></script>
+	<script src="roll-over-curve.js"></script>
 	<script src="../../js/cyclops.js"></script>
 	<script src="jquery.js"></script>
 
@@ -28,11 +29,11 @@
 		// Use the curve with the JQuery animate function.
 
 		$("#buttonExample").on("mouseenter", function() {
-			$("#buttonExample").stop().animate({"width" : 400}, rollovers["kviz8080"].duration * 100, "kviz");
+			$("#buttonExample").stop().animate({"width" : 400}, rollovers["kviz8080"].duration , "kviz");
 		});
 
 		$("#buttonExample").on("mouseleave", function() {
-			$("#buttonExample").stop().animate({"width" : 300}, rollovers["kviz8080"].duration * 100, "kviz");
+			$("#buttonExample").stop().animate({"width" : 300}, rollovers["kviz8080"].duration , "kviz");
 		});
 
 	});
